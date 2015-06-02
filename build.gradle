@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+sourceCompatibility = 1.5
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+    compile 'org.jblas:jblas:1.2.3'
+    compile 'gov.nist.math:jama:1.0.3'
+    compile 'com.github.wendykierp:JTransforms:3.0'
+    compile 'org.imgscalr:imgscalr-lib:4.2'
+}
