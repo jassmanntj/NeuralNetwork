@@ -95,13 +95,7 @@ public class NeuralNetwork {
             System.out.println("Test");
             DoubleMatrix testRes = compute(test, testLab);
             compareResults(Utils.computeResults(testRes), testLab);
-            for(int j = 0; j < cls.length; j++) {
-                System.out.println("ConvA"+j+": " + cls[j].getA());
-            }
-            for(int j = 0; j < lds.length; j++) {
-                System.out.println("FC"+j+": " + lds[j].getA());
-            }
-            //if(finished) break;
+
         }
         write(name);
     }

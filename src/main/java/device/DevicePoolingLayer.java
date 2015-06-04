@@ -31,7 +31,7 @@ public class DevicePoolingLayer extends DeviceStructuredLayer implements Seriali
         Matrix result = new Matrix(resultRows, resultCols);
         for(int poolRow = 0; poolRow < resultRows; poolRow++) {
             for(int poolCol = 0; poolCol < resultCols; poolCol++) {
-                double max = 0;
+                double max = -Double.MAX_VALUE;
                 for(int i = 0; i < poolDim; i++) {
                     for(int j = 0; j < poolDim; j++) {
                         double val = convolvedFeature.get(poolRow*poolDim+i,poolCol*poolDim+j);

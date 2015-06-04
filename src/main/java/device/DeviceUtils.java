@@ -52,7 +52,7 @@ public class DeviceUtils {
         Matrix result = new Matrix(rowSize, colSize);
         for(int i = 0; i < rowSize; i++) {
             for(int j = 0; j < colSize; j++) {
-                result.set(i,j,res[startRows+i][startCols+j*2]);
+                result.set(i,j,res[startRows+i][(startCols+j)*2]);
             }
         }
         return result;
@@ -82,7 +82,7 @@ public class DeviceUtils {
         for(int i = 0; i < a.length; i++) {
             for(int j = 0; j < a[i].length; j+=2) {
                 res[i][j] = a[i][j] * b[i][j] - (a[i][j+1] * b[i][j+1]);
-                res[i][j+1] = a[i][j] * b[i][j+1] - (a[i][j+1] * b[i][j]);
+                res[i][j+1] = a[i][j] * b[i][j+1] + (a[i][j+1] * b[i][j]);
             }
         }
         return res;
@@ -139,31 +139,33 @@ public class DeviceUtils {
 
     private static Matrix softmax(Matrix z) {
         double max = z.norm1();
+        System.out.println(max);
+        Matrix res = new Matrix(z.getRowDimension(), z.getColumnDimension());
         for(int j = 0; j < z.getColumnDimension(); j++) {
-            z.set(0,j,Math.exp(z.get(0,j)-max));
+            res.set(0,j,Math.exp(z.get(0,j)-max));
         }
         double sum = 0;
-        for(int i = 0; i < z.getColumnDimension(); i++) {
-            sum += z.get(0,i);
+        for(int i = 0; i < res.getColumnDimension(); i++) {
+            sum += res.get(0,i);
         }
-        for(int i = 0; i < z.getColumnDimension(); i++) {
-            z.set(0,i, z.get(0,i)/sum);
+        for(int i = 0; i < res.getColumnDimension(); i++) {
+            res.set(0,i, res.get(0,i)/sum);
         }
-        return z;
+        return res;
     }
 
 
-    public static Matrix sigmoid(Matrix input) {
+    private static Matrix sigmoid(Matrix input) {
+        Matrix res = new Matrix(input.getRowDimension(), input.getColumnDimension());
         for(int i = 0; i < input.getRowDimension(); i++) {
             for(int j = 0; j < input.getColumnDimension(); j++) {
-                input.set(i,j,1/(1+Math.exp(-input.get(i,j))));
+                res.set(i,j,1/(1+Math.exp(-input.get(i,j))));
             }
         }
-        return input;
+        return res;
     }
 
-    public static Matrix prelu(Matrix z, double a) {
-        //return z.le(0).mul(a-1).add(1).mul(z);
+    private static Matrix prelu(Matrix z, double a) {
         Matrix res = new Matrix(z.getRowDimension(), z.getColumnDimension());
         for(int i = 0; i < res.getRowDimension(); i++) {
             for(int j = 0; j < res.getColumnDimension(); j++) {
@@ -174,7 +176,7 @@ public class DeviceUtils {
         return res;
     }
 
-    public static Matrix relu(Matrix z) {
+    private static Matrix relu(Matrix z) {
         return prelu(z, 0);
     }
 }

@@ -84,7 +84,7 @@ public class Utils {
 		t.complexForward(kernelDFT.data);
 		kernelDFT.muli(inputDFT);
 		t.complexInverse(kernelDFT.data, true);
-		int rowSize = inputRows - kernelRows + 1;
+        int rowSize = inputRows - kernelRows + 1;
 		int colSize = inputCols - kernelCols + 1;
 		DoubleMatrix result = kernelDFT.getReal();
         if(!valid) return result;
@@ -357,6 +357,7 @@ public class Utils {
     }
 
     private static DoubleMatrix softmax(DoubleMatrix z) {
+        System.out.println(z.rowMaxs().get(0));
         DoubleMatrix p = z.subColumnVector(z.rowMaxs());
         MatrixFunctions.expi(p);
         p.diviColumnVector(p.rowSums());
