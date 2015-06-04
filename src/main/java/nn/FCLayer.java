@@ -74,15 +74,15 @@ public class FCLayer {
      */
 	public void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn) {
 		double epsilon = 1e-7;
-
+        this.lambda = 0;
 		DoubleMatrix biasG = new DoubleMatrix(bias.rows, bias.columns);
 		for(int i = 0; i < bias.length; i++) {
 			bias.put(i, bias.get(i)+epsilon);
-			Gradients gradientsPlus = cnn.computeCost(input, labels);
+			double gradientsPlus = cnn.computeCost(input, labels);
 			bias.put(i, bias.get(i)-2*epsilon);
-			Gradients gradientsMinus = cnn.computeCost(input, labels);
+			double gradientsMinus = cnn.computeCost(input, labels);
 			bias.put(i, bias.get(i)+epsilon);
-			biasG.put(i, (gradientsPlus.cost- gradientsMinus.cost)/(2*epsilon));
+			biasG.put(i, (gradientsPlus- gradientsMinus)/(2*epsilon));
 		}
 		DoubleMatrix biasA = biasG.add(gradients.biasGrad);
 		DoubleMatrix biasS = biasG.sub(gradients.biasGrad);
@@ -91,22 +91,22 @@ public class FCLayer {
 		DoubleMatrix thetaG = new DoubleMatrix(theta.rows, theta.columns);
 		for(int i = 0; i < theta.length; i++) {
 			theta.put(i, theta.get(i)+epsilon);
-			Gradients gradientsPlus = cnn.computeCost(input, labels);
+			double gradientsPlus = cnn.computeCost(input, labels);
 			theta.put(i, theta.get(i)-2*epsilon);
-			Gradients gradientsMinus = cnn.computeCost(input, labels);
+			double gradientsMinus = cnn.computeCost(input, labels);
 			theta.put(i, theta.get(i)+epsilon);
-			thetaG.put(i, (gradientsPlus.cost- gradientsMinus.cost)/(2*epsilon));
+			thetaG.put(i, (gradientsPlus- gradientsMinus)/(2*epsilon));
 		}
 		DoubleMatrix thetaA = thetaG.add(gradients.thetaGrad);
 		DoubleMatrix thetaS = thetaG.sub(gradients.thetaGrad);
 		System.out.println("SAE Theta Diff: "+thetaS.norm2()/thetaA.norm2());
 
         a += epsilon;
-        Gradients gradientsP = cnn.computeCost(input, labels);
+        double gradientsP = cnn.computeCost(input, labels);
         a -= 2*epsilon;
-        Gradients gradientsM = cnn.computeCost(input, labels);
+        double gradientsM = cnn.computeCost(input, labels);
         a += epsilon;
-        double aG = (gradientsP.cost- gradientsM.cost)/(2*epsilon);
+        double aG = (gradientsP- gradientsM)/(2*epsilon);
         System.out.println("SAE a: "+ Math.abs((gradients.aGrad - aG) / (gradients.aGrad + aG)));
 	}
 
@@ -119,7 +119,8 @@ public class FCLayer {
      * Return:
      * @return gradients of the layer
      */
-	public Gradients cost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix delta) {
+	public Gradients cost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix delta, DoubleMatrix labels) {
+        DoubleMatrix res = input.mmul(theta).addRowVector(bias);
         double aGrad = Utils.aGrad(activationFunction, res, delta);
 		delta.muli(Utils.activationGradient(activationFunction, output, a)).muli(output.ne(0));
 		//delta2
@@ -130,9 +131,7 @@ public class FCLayer {
 		//b1grad
 		DoubleMatrix biasGrad = delta.columnSums();
         biasGrad.divi(input.rows * (1 - dropout));
-        MatrixFunctions.logi(delta);
-        double cost = -delta.mul(output).sum()/input.rows + theta.mul(theta).sum()*lambda/2;
-		return new Gradients(cost, thetaGrad, biasGrad, delta2, aGrad);
+		return new Gradients(thetaGrad, biasGrad, delta2, aGrad);
 	}
 
     /**

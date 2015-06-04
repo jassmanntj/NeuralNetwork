@@ -63,7 +63,7 @@ public class PoolingLayer extends StructuredLayer {
                     }
                 }
         }
-        return new Gradients(0, null, null, result, 0);
+        return new Gradients(null, null, result, 0);
     }
 
     public DoubleMatrix[][] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {

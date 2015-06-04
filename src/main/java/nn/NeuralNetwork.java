@@ -4,6 +4,7 @@ import device.DeviceStructuredLayer;
 import device.DeviceFullyConnectedLayer;
 import device.DeviceNeuralNetwork;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -63,9 +64,9 @@ public class NeuralNetwork {
                 for(int k = 0; k < lds.length; k++) {
                     ldsResults[k+1] = lds[k].feedforward(ldsResults[k]);
                 }
-                DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
-                for(int k = lds.length; k >= 0; k--) {
-                    Gradients cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta);
+                DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labs);
+                for(int k = lds.length-1; k >= 0; k--) {
+                    Gradients cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta, labs);
                     delta = lds[k].backpropagation(cr, momentum, alpha);
                     if(Double.isNaN(lds[k].getA())) {
                         System.out.println("FC"+k);
@@ -120,7 +121,7 @@ public class NeuralNetwork {
         return(sums[0]==result.length);
     }
 
-    public Gradients computeCost(DoubleMatrix[][] input, DoubleMatrix labels) {
+    public double computeCost(DoubleMatrix[][] input, DoubleMatrix labels) {
         DoubleMatrix[][][] convResults = new DoubleMatrix[cls.length+1][][];
         convResults[0] = input;
         for(int k = 0; k < cls.length; k++) {
@@ -131,8 +132,8 @@ public class NeuralNetwork {
         for(int k = 0; k < lds.length; k++) {
             ldsResults[k+1] = lds[k].compute(ldsResults[k]);
         }
-        Gradients cr = lds[lds.length-1].cost(ldsResults[lds.length-1], labels, null);
-        return cr;
+        DoubleMatrix p = MatrixFunctions.log(ldsResults[ldsResults.length-1]);
+        return -p.mul(labels).sum() / input.length;
     }
 
     public void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels) {
@@ -149,7 +150,7 @@ public class NeuralNetwork {
         Gradients cr;
         DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
         for(int k = lds.length-1; k >= 0; k--) {
-            cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta);
+            cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta, labels);
             delta = cr.delta;
             lds[k].gradientCheck(input, labels, cr, this);
         }
@@ -198,6 +199,7 @@ public class NeuralNetwork {
         cost = 0;
         for(int j = 0; j < input.length/batchSize; j++) {
             DoubleMatrix[][] in = new DoubleMatrix[batchSize][];
+            DoubleMatrix labs = labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns);
             for(int k = 0; k < batchSize; k++) {
                 in[k] = input[j*batchSize+k];
             }
@@ -208,9 +210,11 @@ public class NeuralNetwork {
             for (int i = 0; i < lds.length-1; i++) {
                 fin = lds[i].compute(fin);
             }
-            if (res == null) res = lds[lds.length-1].compute(fin);
-            else res = DoubleMatrix.concatVertically(res, lds[lds.length-1].compute(fin));
-            cost += lds[lds.length-1].cost(fin, labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns), null).cost/(input.length/batchSize);
+            DoubleMatrix out = lds[lds.length-1].compute(fin);
+            if (res == null) res = out;
+            else res = DoubleMatrix.concatVertically(res, out);
+            DoubleMatrix p = MatrixFunctions.log(out);
+            cost += -p.mul(labs).sum() / (out.rows*batchSize);
         }
         System.out.println("Cost: "+cost);
         return res;
@@ -224,8 +228,11 @@ public class NeuralNetwork {
         for (int i = 0; i < lds.length-1; i++) {
             fin = lds[i].compute(fin);
         }
-        System.out.println("Cost: "+lds[lds.length-1].cost(fin, labels, null).cost);
-        return lds[lds.length-1].compute(fin);
+        DoubleMatrix out = lds[lds.length-1].compute(fin);
+        DoubleMatrix p = MatrixFunctions.log(out);
+        cost = -p.mul(labels).sum() / out.rows;
+        System.out.println("Cost: "+cost);
+        return out;
     }
 
     public void write(String filename) {

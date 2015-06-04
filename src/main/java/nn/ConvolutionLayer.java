@@ -189,14 +189,15 @@ public class ConvolutionLayer extends StructuredLayer {
      */
     protected DoubleMatrix[][] gradientCheck(Gradients gradients, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
         double epsilon = 1e-8;
+        this.lambda = 0;
         DoubleMatrix biasG = new DoubleMatrix(bias.length);
         for(int i = 0; i < bias.length; i++) {
             bias.put(i, bias.get(i)+epsilon);
-            Gradients gradientsPlus = cnn.computeCost(in, labels);
+            double gradientsPlus = cnn.computeCost(in, labels);
             bias.put(i, bias.get(i)-2*epsilon);
-            Gradients gradientsMinus = cnn.computeCost(in, labels);
+            double gradientsMinus = cnn.computeCost(in, labels);
             bias.put(i, bias.get(i)+epsilon);
-            biasG.put(i, (gradientsPlus.cost- gradientsMinus.cost)/(2*epsilon));
+            biasG.put(i, (gradientsPlus- gradientsMinus)/(2*epsilon));
         }
         DoubleMatrix biasA = biasG.add(gradients.biasGrad);
         DoubleMatrix biasS = biasG.sub(gradients.biasGrad);
@@ -207,11 +208,11 @@ public class ConvolutionLayer extends StructuredLayer {
                 DoubleMatrix thetaG = new DoubleMatrix(gradients.tGrad[i][j].rows, gradients.tGrad[i][j].columns);
                 for(int k = 0; k < theta[i][j].length; k++) {
                     theta[i][j].put(k, theta[i][j].get(k)+epsilon);
-                    Gradients gradientsPlus = cnn.computeCost(in, labels);
+                    double gradientsPlus = cnn.computeCost(in, labels);
                     theta[i][j].put(k, theta[i][j].get(k)-2*epsilon);
-                    Gradients gradientsMinus = cnn.computeCost(in, labels);
+                    double gradientsMinus = cnn.computeCost(in, labels);
                     theta[i][j].put(k, theta[i][j].get(k)+epsilon);
-                    thetaG.put(k, (gradientsPlus.cost- gradientsMinus.cost)/(2*epsilon));
+                    thetaG.put(k, (gradientsPlus- gradientsMinus)/(2*epsilon));
                 }
                 DoubleMatrix thetaA = thetaG.add(gradients.tGrad[i][j]);
                 DoubleMatrix thetaS = thetaG.sub(gradients.tGrad[i][j]);
@@ -220,11 +221,11 @@ public class ConvolutionLayer extends StructuredLayer {
         }
 
         a += epsilon;
-        Gradients gradientsP = cnn.computeCost(in, labels);
+        double gradientsP = cnn.computeCost(in, labels);
         a -= 2*epsilon;
-        Gradients gradientsM = cnn.computeCost(in, labels);
+        double gradientsM = cnn.computeCost(in, labels);
         a += epsilon;
-        double aG = (gradientsP.cost- gradientsM.cost)/(2*epsilon);
+        double aG = (gradientsP- gradientsM)/(2*epsilon);
         System.out.println("CL a: "+ Math.abs((gradients.aGrad - aG) / (gradients.aGrad + aG)));
         return gradients.delt;
     }
@@ -294,7 +295,7 @@ public class ConvolutionLayer extends StructuredLayer {
         }
         //System.out.println(delta[0][0]);
 
-        return new Gradients(0, thetaGrad, bGrad, delt, aGrad);
+        return new Gradients(thetaGrad, bGrad, delt, aGrad);
     }
 
     /**
