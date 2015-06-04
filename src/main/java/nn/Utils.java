@@ -357,7 +357,6 @@ public class Utils {
     }
 
     private static DoubleMatrix softmax(DoubleMatrix z) {
-        System.out.println(z.rowMaxs().get(0));
         DoubleMatrix p = z.subColumnVector(z.rowMaxs());
         MatrixFunctions.expi(p);
         p.diviColumnVector(p.rowSums());
