@@ -1,8 +1,8 @@
 package nn;
 
 import Jama.Matrix;
-import mobile.DeviceConvPoolLayer;
-import mobile.DeviceConvolutionLayer;
+import device.DeviceStructuredLayer;
+import device.DeviceConvolutionLayer;
 import org.jblas.DoubleMatrix;
 
 import java.io.BufferedWriter;
@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
  * @author Tim Jassmann
  * @version 05/26/2015
  */
-public class ConvolutionLayer extends ConvPoolLayer {
+public class ConvolutionLayer extends StructuredLayer {
     private DoubleMatrix theta[][];
     private DoubleMatrix thetaVelocity[][];
     private double a;
@@ -348,7 +348,7 @@ public class ConvolutionLayer extends ConvPoolLayer {
         }
     }
 
-    public DeviceConvPoolLayer getDevice() {
+    public DeviceStructuredLayer getDevice() {
         Matrix b = new Matrix(bias.toArray2());
         Matrix[][] t = new Matrix[theta.length][theta[0].length];
         for(int i = 0; i < theta.length; i++) {

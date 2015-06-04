@@ -2,41 +2,44 @@ package device;
 
 import Jama.Matrix;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 /**
- * Created by jassmanntj on 4/13/2015.
+ * DeviceNeuralNetwork
+ *
+ * @author Timothy Jassmann
+ * @version 06/02/2015
  */
-
 public class DeviceNeuralNetwork implements Serializable{
-    DeviceConvPoolLayer[] cls;
-    DeviceFCLayer[] fcs;
+    DeviceStructuredLayer[] cls;
+    DeviceFullyConnectedLayer[] fcs;
 
-    public DeviceNeuralNetwork(DeviceConvPoolLayer[] cls, DeviceFCLayer[] fcs) throws IOException {
+    /**
+     * DeviceNeuralNetwork - Constructor for the device neural network
+     *
+     * @param cls The convolution and pooling layers of the network
+     * @param fcs The fully connected layers of the network
+     */
+    public DeviceNeuralNetwork(DeviceStructuredLayer[] cls, DeviceFullyConnectedLayer[] fcs) {
         this.cls = cls;
         this.fcs = fcs;
     }
 
+    /**
+     * compute - computes the output of the network
+     *
+     * @param input Input matrices representing each channel of the input
+     *
+     * @return The output of the network
+     */
     public Matrix compute(Matrix[] input) {
-        Matrix in = null;
         for(int i = 0; i < cls.length; i++) {
             input = cls[i].compute(input);
         }
-        in = DeviceUtils.flatten(input);
+        Matrix in = DeviceUtils.flatten(input);
         for(int i = 0; i < fcs.length; i++) {
             in = fcs[i].compute(in);
         }
         return in;
-    }
-
-    private String getString(Matrix mat) {
-        String s = "";
-        for(int i = 0; i < mat.getRowDimension(); i++) {
-            for(int j = 0; j < mat.getColumnDimension(); j++) {
-                s += mat.get(i,j);
-            }
-        }
-        return s;
     }
 }

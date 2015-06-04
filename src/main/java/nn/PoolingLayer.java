@@ -1,7 +1,7 @@
 package nn;
 
-import mobile.DeviceConvPoolLayer;
-import mobile.DevicePoolingLayer;
+import device.DeviceStructuredLayer;
+import device.DevicePoolingLayer;
 import org.jblas.DoubleMatrix;
 
 import java.io.BufferedWriter;
@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * Created by Tim on 4/1/2015.
  */
-public class PoolingLayer extends ConvPoolLayer {
+public class PoolingLayer extends StructuredLayer {
     private int poolDim;
     private int type;
     public static final int MAX = 0;
@@ -145,7 +145,7 @@ public class PoolingLayer extends ConvPoolLayer {
         }
     }
 
-    public DeviceConvPoolLayer getDevice() {
+    public DeviceStructuredLayer getDevice() {
         return new DevicePoolingLayer(poolDim, type);
     }
 }

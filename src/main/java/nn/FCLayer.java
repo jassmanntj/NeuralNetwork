@@ -1,8 +1,9 @@
 package nn;
 
 import Jama.Matrix;
-import device.DeviceFCLayer;
+import device.DeviceFullyConnectedLayer;
 import org.jblas.DoubleMatrix;
+import org.jblas.MatrixFunctions;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -129,7 +130,9 @@ public class FCLayer {
 		//b1grad
 		DoubleMatrix biasGrad = delta.columnSums();
         biasGrad.divi(input.rows * (1 - dropout));
-		return new Gradients(0, thetaGrad, biasGrad, delta2, aGrad);
+        MatrixFunctions.logi(delta);
+        double cost = -delta.mul(output).sum()/input.rows + theta.mul(theta).sum()*lambda/2;
+		return new Gradients(cost, thetaGrad, biasGrad, delta2, aGrad);
 	}
 
     /**
@@ -212,10 +215,10 @@ public class FCLayer {
 		}
 	}
 
-    public DeviceFCLayer getDevice() {
+    public DeviceFullyConnectedLayer getDevice() {
         Matrix t = new Matrix(theta.toArray2());
         Matrix b = new Matrix(bias.toArray2());
-        return new DeviceFCLayer(activationFunction, a, t, b, dropout);
+        return new DeviceFullyConnectedLayer(t, b, activationFunction, a, dropout);
     }
 }
 

@@ -371,6 +371,7 @@ public class Utils {
                 return preluGradient(z, a);
             case RELU:
                 return reluGradient(z);
+            case SOFTMAX:
             case NONE:
                 return DoubleMatrix.ones(z.rows, z.columns);
             default:

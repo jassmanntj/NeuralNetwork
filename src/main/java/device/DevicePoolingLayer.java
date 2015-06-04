@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * Created by jassmanntj on 4/13/2015.
  */
-public class DevicePoolingLayer extends DeviceConvPoolLayer implements Serializable {
+public class DevicePoolingLayer extends DeviceStructuredLayer implements Serializable {
     private int poolDim;
     private int type;
 
@@ -20,12 +20,12 @@ public class DevicePoolingLayer extends DeviceConvPoolLayer implements Serializa
     public Matrix[] compute(Matrix[] in) {
         Matrix[] result = new Matrix[in.length];
         for(int i = 0; i < in.length; i++) {
-            result[i] = pool(in[i]);
+            result[i] = maxPool(in[i]);
         }
         return result;
     }
 
-    private Matrix pool(Matrix convolvedFeature) {
+    private Matrix maxPool(Matrix convolvedFeature) {
         int resultRows = convolvedFeature.getRowDimension()/poolDim;
         int resultCols = convolvedFeature.getColumnDimension()/poolDim;
         Matrix result = new Matrix(resultRows, resultCols);

@@ -1,22 +1,22 @@
 package nn;
 
 import Jama.Matrix;
-import device.DeviceFCLayer;
+import device.DeviceFullyConnectedLayer;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 
-public class SoftmaxClassifier {
+public class SoftmaxClassifier extends FCLayer {
 	private int inputSize;
 	private int outputSize;
 	private int m;
 	private double lambda;
 	private DoubleMatrix theta;
 	private DoubleMatrix tVelocity;
-	
 	public SoftmaxClassifier(double lambda, int inputSize, int outputSize) {
+        super(inputSize, outputSize, lambda, 0, Utils.SOFTMAX);
 		this.lambda = lambda;
 		this.inputSize = inputSize;
 		this.outputSize = outputSize;
@@ -29,7 +29,7 @@ public class SoftmaxClassifier {
 		tVelocity = new DoubleMatrix(inputSize, outputSize);
 	}
 
-	public DoubleMatrix computeNumericalGradient(DoubleMatrix input, DoubleMatrix output) {
+	private DoubleMatrix computeNumericalGradient(DoubleMatrix input, DoubleMatrix output) {
 		double epsilon = 0.0001;
 		DoubleMatrix numGrad = DoubleMatrix.zeros(theta.rows, theta.columns);
 		for(int i = 0; i < theta.rows; i++) {
@@ -38,15 +38,15 @@ public class SoftmaxClassifier {
 				DoubleMatrix thetaMinus = theta.dup();
 				thetaPlus.put(i,j,thetaPlus.get(i,j)+epsilon);
 				thetaMinus.put(i,j,thetaMinus.get(i,j)-epsilon);
-				Gradients gradientsPlus = cost(input, output, thetaPlus);
-				Gradients gradientsMinus = cost(input, output, thetaMinus);
+				Gradients gradientsPlus = gradcost(input, output, thetaPlus);
+				Gradients gradientsMinus = gradcost(input, output, thetaMinus);
 				numGrad.put(i,j,(gradientsPlus.cost- gradientsMinus.cost)/(2*epsilon));
 			}
 		}
 		return numGrad;
 	}
 	
-	public Gradients cost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix theta) {
+	public Gradients gradcost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix theta) {
 		DoubleMatrix res1 = input.mmul(theta);
 		DoubleMatrix maxes = res1.rowMaxs();
 		DoubleMatrix res = res1.subColumnVector(maxes);
@@ -62,7 +62,7 @@ public class SoftmaxClassifier {
 		return new Gradients(cost, thetaGrad, null, null);
 	}
 
-	public Gradients cost(DoubleMatrix input, DoubleMatrix output) {
+	public Gradients cost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix delt) {
 		m = input.rows;
 		DoubleMatrix res = input.mmul(theta);
 		DoubleMatrix p = Utils.activationFunction(Utils.SOFTMAX, res, 0);
@@ -79,6 +79,9 @@ public class SoftmaxClassifier {
 		theta.subi(tVelocity);
 		return c.delta;
 	}
+
+    public void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn){
+    }
 
 	public void gradientCheck(DoubleMatrix input, DoubleMatrix output) {
 		Gradients result = cost(input, output, theta);
@@ -105,9 +108,13 @@ public class SoftmaxClassifier {
 		return Utils.activationFunction(Utils.SOFTMAX, input.mmul(theta), 0);
 	}
 
-    public DeviceFCLayer getDevice() {
+    public DoubleMatrix feedforward(DoubleMatrix input) {
+        return Utils.activationFunction(Utils.SOFTMAX, input.mmul(theta), 0);
+    }
+
+    public DeviceFullyConnectedLayer getDevice() {
         Matrix t = new Matrix(theta.toArray2());
-        return new DeviceFCLayer(Utils.SOFTMAX, 0, t, null, 0);
+        return new DeviceFullyConnectedLayer(t, null, Utils.SOFTMAX, 0, 0);
     }
 
 }

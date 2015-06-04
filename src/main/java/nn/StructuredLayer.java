@@ -1,6 +1,6 @@
 package nn;
 
-import device.DeviceConvPoolLayer;
+import device.DeviceStructuredLayer;
 import org.jblas.DoubleMatrix;
 
 import java.io.BufferedWriter;
@@ -8,7 +8,7 @@ import java.io.BufferedWriter;
 /**
  * Created by Tim on 4/1/2015.
  */
-public abstract class ConvPoolLayer {
+public abstract class StructuredLayer {
     public abstract DoubleMatrix[][] compute(DoubleMatrix[][] in);
     protected DoubleMatrix[][] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
         return null;
@@ -24,5 +24,5 @@ public abstract class ConvPoolLayer {
     protected DoubleMatrix[][] feedForward(DoubleMatrix[][] in) {
         return compute(in);
     };
-    public abstract DeviceConvPoolLayer getDevice();
+    public abstract DeviceStructuredLayer getDevice();
 }

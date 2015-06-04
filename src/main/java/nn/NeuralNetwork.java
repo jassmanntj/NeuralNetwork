@@ -1,7 +1,7 @@
 package nn;
 
-import device.DeviceConvPoolLayer;
-import device.DeviceFCLayer;
+import device.DeviceStructuredLayer;
+import device.DeviceFullyConnectedLayer;
 import device.DeviceNeuralNetwork;
 import org.jblas.DoubleMatrix;
 
@@ -14,19 +14,17 @@ import java.util.Random;
  * Created by Tim on 3/29/2015.
  */
 public class NeuralNetwork {
-    private ConvPoolLayer[] cls;
+    private StructuredLayer[] cls;
     private FCLayer[] lds;
-    private SoftmaxClassifier sc;
     private String name;
     private Random r;
     private double cost;
     private double previousCost;
     private static final boolean DEBUG = false;
 
-    public NeuralNetwork(ConvPoolLayer[] cls, FCLayer[] lds, SoftmaxClassifier sc, String name) {
+    public NeuralNetwork(StructuredLayer[] cls, FCLayer[] lds, String name) {
         this.cls = cls;
         this.lds = lds;
-        this.sc = sc;
         this.name = name;
         this.cost = 1e9;
         r = new Random(System.currentTimeMillis());
@@ -65,10 +63,9 @@ public class NeuralNetwork {
                 for(int k = 0; k < lds.length; k++) {
                     ldsResults[k+1] = lds[k].feedforward(ldsResults[k]);
                 }
-                Gradients cr = sc.cost(ldsResults[lds.length], labs);
-                DoubleMatrix delta = sc.backpropagation(cr, momentum, alpha);
-                for(int k = lds.length-1; k >= 0; k--) {
-                    cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta);
+                DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
+                for(int k = lds.length; k >= 0; k--) {
+                    Gradients cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta);
                     delta = lds[k].backpropagation(cr, momentum, alpha);
                     if(Double.isNaN(lds[k].getA())) {
                         System.out.println("FC"+k);
@@ -76,6 +73,7 @@ public class NeuralNetwork {
                     }
 
                 }
+                Gradients cr;
                 DoubleMatrix[][] delt = Utils.expand(delta, convResults[cls.length][0].length, convResults[cls.length][0][0].rows, convResults[cls.length][0][0].columns);
                 for(int k = cls.length-1; k >= 0; k--) {
                     cr = cls[k].cost(convResults[k], convResults[k + 1], delt);
@@ -133,7 +131,7 @@ public class NeuralNetwork {
         for(int k = 0; k < lds.length; k++) {
             ldsResults[k+1] = lds[k].compute(ldsResults[k]);
         }
-        Gradients cr = sc.cost(ldsResults[lds.length], labels);
+        Gradients cr = lds[lds.length-1].cost(ldsResults[lds.length-1], labels, null);
         return cr;
     }
 
@@ -148,9 +146,8 @@ public class NeuralNetwork {
         for(int i = 0; i < lds.length; i++) {
             ldsResults[i+1] = lds[i].feedforward(ldsResults[i]);
         }
-        sc.gradientCheck(ldsResults[lds.length], labels);
-        Gradients cr = sc.cost(ldsResults[lds.length], labels);
-        DoubleMatrix delta = cr.delta;
+        Gradients cr;
+        DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
         for(int k = lds.length-1; k >= 0; k--) {
             cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta);
             delta = cr.delta;
@@ -190,8 +187,8 @@ public class NeuralNetwork {
             for (int i = 0; i < lds.length; i++) {
                 fin = lds[i].compute(fin);
             }
-            if (res == null) res = sc.compute(fin);
-            else res = DoubleMatrix.concatVertically(res, sc.compute(fin));
+            if (res == null) res = fin;
+            else res = DoubleMatrix.concatVertically(res, fin);
         }
         return res;
     }
@@ -208,12 +205,12 @@ public class NeuralNetwork {
                 in = cls[i].compute(in);
             }
             DoubleMatrix fin = Utils.flatten(in);
-            for (int i = 0; i < lds.length; i++) {
+            for (int i = 0; i < lds.length-1; i++) {
                 fin = lds[i].compute(fin);
             }
-            if (res == null) res = sc.compute(fin);
-            else res = DoubleMatrix.concatVertically(res, sc.compute(fin));
-            cost += sc.cost(fin, labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns)).cost/(input.length/batchSize);
+            if (res == null) res = lds[lds.length-1].compute(fin);
+            else res = DoubleMatrix.concatVertically(res, lds[lds.length-1].compute(fin));
+            cost += lds[lds.length-1].cost(fin, labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns), null).cost/(input.length/batchSize);
         }
         System.out.println("Cost: "+cost);
         return res;
@@ -224,26 +221,24 @@ public class NeuralNetwork {
             input = cls[i].compute(input);
         }
         DoubleMatrix fin = Utils.flatten(input);
-        for (int i = 0; i < lds.length; i++) {
+        for (int i = 0; i < lds.length-1; i++) {
             fin = lds[i].compute(fin);
         }
-        DoubleMatrix res = sc.compute(fin);
-        System.out.println("Cost: "+sc.cost(fin, labels).cost);
-        return res;
+        System.out.println("Cost: "+lds[lds.length-1].cost(fin, labels, null).cost);
+        return lds[lds.length-1].compute(fin);
     }
 
     public void write(String filename) {
         try {
             ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
-            DeviceConvPoolLayer[] cp = new DeviceConvPoolLayer[cls.length];
-            DeviceFCLayer[] fc = new DeviceFCLayer[lds.length+1];
+            DeviceStructuredLayer[] cp = new DeviceStructuredLayer[cls.length];
+            DeviceFullyConnectedLayer[] fc = new DeviceFullyConnectedLayer[lds.length];
             for(int i = 0; i < cls.length; i++) {
                 cp[i] = cls[i].getDevice();
             }
             for(int i = 0; i < lds.length; i++) {
                 fc[i] = lds[i].getDevice();
             }
-            fc[fc.length-1] = sc.getDevice();
             DeviceNeuralNetwork nn = new DeviceNeuralNetwork(cp, fc);
             out.writeObject(nn);
             out.close();

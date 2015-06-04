@@ -5,24 +5,42 @@ import Jama.Matrix;
 import java.io.Serializable;
 
 /**
- * Created by jassmanntj on 4/13/2015.
+ * DeviceConvolutionLayer
+ *
+ * @author Timothy Jassmann
+ * @version 06/02/2015
  */
-public class DeviceConvolutionLayer extends DeviceConvPoolLayer implements Serializable {
+public class DeviceConvolutionLayer extends DeviceStructuredLayer implements Serializable {
     private Matrix theta[][];
     private Matrix bias;
-    private int layer1 = DeviceUtils.PRELU;
+    private int activation;
     private double a;
     private double dropout;
 
+    /**
+     * DeviceConvolutionLayer - A constructor for the device convolution layer
+     *
+     * @param theta The weight matrices
+     * @param bias The bias matrix
+     * @param activation The activation function
+     * @param a The a value (for the PReLU activation)
+     * @param dropout The percent dropout used
+     */
     public DeviceConvolutionLayer(Matrix[][] theta, Matrix bias, int layer1, double a, double dropout) {
         this.theta = theta;
         this.bias = bias;
-        this.layer1 = layer1;
+        this.activation = layer1;
         this.a = a;
         this.dropout = dropout;
     }
 
-
+    /**
+     * compute - Computes the output of the layer
+     *
+     * @param input The input matrices representing each channel of the input
+     *
+     * @return The output of the layer
+     */
     public Matrix[] compute(Matrix[] input) {
         Matrix[] result = new Matrix[theta.length];
         for (int feature = 0; feature < theta.length; feature++) {
@@ -31,7 +49,7 @@ public class DeviceConvolutionLayer extends DeviceConvPoolLayer implements Seria
                 res.plusEquals(DeviceUtils.conv2d(input[channel], theta[feature][channel]));
             }
 
-            result[feature] = DeviceUtils.activationFunction(layer1, res.plus(new Matrix(res.getRowDimension(), res.getColumnDimension(), bias.get(feature, 0))), a).times(1 - dropout);
+            result[feature] = DeviceUtils.activationFunction(activation, res.plus(new Matrix(res.getRowDimension(), res.getColumnDimension(), bias.get(feature, 0))), a).times(1 - dropout);
         }
 
 
