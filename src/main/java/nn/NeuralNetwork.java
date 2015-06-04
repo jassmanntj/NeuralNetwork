@@ -214,7 +214,7 @@ public class NeuralNetwork {
             if (res == null) res = out;
             else res = DoubleMatrix.concatVertically(res, out);
             DoubleMatrix p = MatrixFunctions.log(out);
-            cost += -p.mul(labs).sum() / (out.rows*batchSize);
+            cost += -p.mul(labs).sum() / (out.rows*(input.length/batchSize));
         }
         System.out.println("Cost: "+cost);
         return res;
