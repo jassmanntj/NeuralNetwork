@@ -25,25 +25,6 @@ public class DeviceUtilsTest extends TestCase {
         }
     }
 
-    private void printMatrix(Matrix m) {
-        for(int i = 0; i < m.getRowDimension(); i++) {
-            for(int j = 0; j < m.getColumnDimension(); j++) {
-                System.out.print(m.get(i,j)+" ");
-            }
-            System.out.println();
-        }
-        System.out.println();
-    }
-
-    private void printMatrix(DoubleMatrix m) {
-        for(int i = 0; i < m.rows; i++) {
-            for(int j = 0; j < m.columns; j++) {
-                System.out.print(m.get(i,j)+" ");
-            }
-            System.out.println();
-        }
-        System.out.println();
-    }
 
     @Test
     public void testZCAWhiten() throws Exception {

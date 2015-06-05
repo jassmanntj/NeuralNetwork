@@ -9,6 +9,7 @@ import org.jblas.MatrixFunctions;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -31,7 +32,7 @@ public class NeuralNetwork {
         r = new Random(System.currentTimeMillis());
     }
 
-    public void train(DoubleMatrix[][] input, DoubleMatrix labels, DoubleMatrix[][] test, DoubleMatrix testLab, int iterations, int batchSize, double momentum, double alpha, double features) throws IOException {
+    public void train(DoubleMatrix[][] input, DoubleMatrix labels, DoubleMatrix[][] test, DoubleMatrix testLab, int iterations, int batchSize, double momentum, double alpha, int set) {
         int[] indices = new int[input.length];
         for(int i = 0; i < indices.length; i++) {
             indices[i] = i;
@@ -86,7 +87,7 @@ public class NeuralNetwork {
                 }
                 if(br) break;
             }
-            System.out.println("\nFeatures: "+features+"\nIteration "+i);
+            System.out.println("\nSet: "+set+"\nIteration "+i);
 
             System.out.println("Train");
             DoubleMatrix res = compute(input, batchSize, labels);
@@ -98,6 +99,58 @@ public class NeuralNetwork {
 
         }
         write(name);
+    }
+
+    public void crossValidation(Loader loader, HashMap<String, Double> labelMap, int k, int iterations, int batchSize, double momentum, double alpha) {
+        for(int i = 0; i < k; i++) {
+            DoubleMatrix[][] trainImages = loader.getTrainData(i,k);
+            DoubleMatrix trainLabels = loader.getTrainLabels(i,k);
+            DoubleMatrix[][] testImages = loader.getTestData(i,k);
+            DoubleMatrix testLabels = loader.getTestLabels(i,k);
+            train(trainImages, trainLabels, testImages, testLabels, iterations, batchSize, momentum, alpha, i);
+            compareClasses(Utils.computeResults(compute(testImages, batchSize)), testLabels, labelMap);
+            resetWeights();
+        }
+    }
+
+    public void resetWeights() {
+        for (int i = 0; i < cls.length; i++) {
+            cls[i].initializeParameters();
+        }
+        for (int i = 0; i < lds.length; i++) {
+            lds[i].initializeParams();
+        }
+    }
+
+    private void compareClasses(int[][] result, DoubleMatrix labels, HashMap<String, Double> labelMap) {
+        HashMap<Double, String> newMap = reverseMap(labelMap);
+        double[] count = new double[labels.columns];
+        double[] totalCount = new double[labels.columns];
+        for(int i = 0; i < result.length; i++) {
+            int labelNo = -1;
+            for(int j = 0; j < labels.columns; j++) {
+                if((int)labels.get(i, j) == 1) {
+                    if(labelNo == -1) {
+                        labelNo = j;
+                    }
+                }
+            }
+            if(labelNo == result[i][0]) {
+                count[labelNo]++;
+            }
+            totalCount[labelNo]++;
+        }
+        for(int i = 0; i < count.length; i++) {
+            System.out.println(newMap.get((double)i)+": " +count[i]+"/"+totalCount[i]+" = "+(count[i]/totalCount[i]));
+        }
+    }
+
+    private HashMap<Double, String> reverseMap(HashMap<String, Double> map) {
+        HashMap<Double, String> newMap = new HashMap<Double, String>();
+        for(String key : map.keySet()) {
+            newMap.put(map.get(key), key);
+        }
+        return newMap;
     }
 
 

@@ -25,4 +25,6 @@ public abstract class StructuredLayer {
         return compute(in);
     };
     public abstract DeviceStructuredLayer getDevice();
+    public void initializeParameters() {
+    }
 }

@@ -29,6 +29,8 @@ public class ConvolutionLayer extends StructuredLayer {
     private double lambda;
     private final double dropout;
     private DoubleMatrix z[][];
+    private int numFeatures;
+    private int channels;
 
     /**
      * ConvolutionLayer - constructor for ConvolutionLayer
@@ -46,6 +48,13 @@ public class ConvolutionLayer extends StructuredLayer {
         this.lambda = lambda;
         this.dropout = dropout;
         this.costFunction = costFunction;
+        this.numFeatures = numFeatures;
+        this.channels = channels;
+        initializeParameters();
+
+    }
+
+    public void initializeParameters() {
         bias = new DoubleMatrix(numFeatures);
         biasVelocity = new DoubleMatrix(numFeatures);
         theta = new DoubleMatrix[numFeatures][channels];

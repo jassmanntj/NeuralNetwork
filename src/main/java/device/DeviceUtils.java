@@ -7,7 +7,7 @@ import org.jtransforms.fft.DoubleFFT_2D;
 /**
  * Created by jassmanntj on 4/13/2015.
  */
-public class DeviceUtils {
+public abstract class DeviceUtils {
     public static final int NONE = 0;
     public static final int SIGMOID = 1;
     public static final int PRELU = 2;

@@ -54,7 +54,7 @@ public class FCLayer {
     /**
      * initializeParams - initializes theta, bias, and a values.
      */
-	private void initializeParams() {
+	public void initializeParams() {
         double stdev = Math.sqrt(2.0 / ((a * a + 1) * inputSize));
 		theta = DoubleMatrix.randn(inputSize, outputSize).muli(stdev);
 		thetaVelocity = new DoubleMatrix(inputSize, outputSize);
