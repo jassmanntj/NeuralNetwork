@@ -105,7 +105,8 @@ public class ImageLoader extends Loader {
         }
     }
 
-    public DoubleMatrix[][] getTrainData(int i,  int batch) {
+    public DoubleMatrix[][] getTrainData(int i,  int batches) {
+        int batch = imgArr.length/batches;
         DoubleMatrix[][] images = new DoubleMatrix[(imgArr.length-batch)][];
         int k = 0;
         for(int j = 0; j < imgArr.length; j++) {
@@ -116,7 +117,8 @@ public class ImageLoader extends Loader {
         return Utils.normalizeData(images);
     }
 
-    public DoubleMatrix[][] getTestData(int i, int batch) {
+    public DoubleMatrix[][] getTestData(int i, int batches) {
+        int batch = imgArr.length/batches;
         DoubleMatrix[][] images = new DoubleMatrix[batch][];
         int k = 0;
         for(int j = 0; j < imgArr.length; j++) {
@@ -202,7 +204,8 @@ public class ImageLoader extends Loader {
         return lbls;
     }
 
-	public DoubleMatrix getTrainLabels(int i, int batch) {
+	public DoubleMatrix getTrainLabels(int i, int batches) {
+        int batch = imgArr.length/batches;
         DoubleMatrix labs = null;
         for(int j = 0; j < lbls.rows; j++) {
             if(j < i*batch || j >= i*batch+batch) {
@@ -217,7 +220,8 @@ public class ImageLoader extends Loader {
         return labs;
 	}
 
-    public DoubleMatrix getTestLabels(int i, int batch) {
+    public DoubleMatrix getTestLabels(int i, int batches) {
+        int batch = imgArr.length/batches;
         DoubleMatrix labs = null;
         for(int j = 0; j < lbls.rows; j++) {
             if(j >= i*batch && j < i*batch+batch) {
