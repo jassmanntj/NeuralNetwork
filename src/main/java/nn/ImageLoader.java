@@ -28,7 +28,7 @@ public class ImageLoader extends Loader {
 	ArrayList<String> names;
 
 
-    public void ImageLoader(File folder, int channels, int width, int height) throws IOException {
+    public ImageLoader(File folder, int channels, int width, int height) throws IOException {
         int z = 0;
         this.channels = channels;
         this.width = width;
