@@ -101,14 +101,14 @@ public class NeuralNetwork {
         write(name);
     }
 
-    public void crossValidation(Loader loader, HashMap<String, Double> labelMap, int k, int iterations, int batchSize, double momentum, double alpha) {
+    public void crossValidation(Loader loader, int k, int iterations, int batchSize, double momentum, double alpha) {
         for(int i = 0; i < k; i++) {
             DoubleMatrix[][] trainImages = loader.getTrainData(i,k);
             DoubleMatrix trainLabels = loader.getTrainLabels(i,k);
             DoubleMatrix[][] testImages = loader.getTestData(i,k);
             DoubleMatrix testLabels = loader.getTestLabels(i,k);
             train(trainImages, trainLabels, testImages, testLabels, iterations, batchSize, momentum, alpha, i);
-            compareClasses(Utils.computeResults(compute(testImages, batchSize)), testLabels, labelMap);
+            compareClasses(Utils.computeResults(compute(testImages, batchSize)), testLabels, loader.getLabelMap());
             resetWeights();
         }
     }

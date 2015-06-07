@@ -38,12 +38,24 @@ public class Utils {
 		return ZCAWhite.mmul(input);
 	}*/
 
+    public static DoubleMatrix[][] normalizeData(DoubleMatrix[][] data) {
+        for(int i = 0; i < data.length; i++) {
+            for(int j = 0; j < data[i].length; j++) {
+                data[i][j].subi(data[i][j].mean());
+                double var = data[i][j].mul(data[i][j]).mean();
+                double stdev = Math.sqrt(var);
+                data[i][j].divi(stdev);
+            }
+        }
+        return data;
+    }
+
     public static DoubleMatrix[][] ZCAWhiten(DoubleMatrix[][] input, double epsilon) {
         DoubleMatrix img = flatten(input);
         DoubleMatrix mean = img.rowMeans();
         img.subiColumnVector(mean);
-        DoubleMatrix sigma = img.mul(img).rowMeans();
-        sigma = DoubleMatrix.diag(sigma);
+        DoubleMatrix sigma = img.transpose().mmul(img).div(img.rows);
+        //sigma = DoubleMatrix.diag(sigma);
         DoubleMatrix[] svd = Singular.fullSVD(sigma);
         DoubleMatrix s = DoubleMatrix.diag(MatrixFunctions.sqrt(svd[1].add(epsilon)).rdiv(1));
         DoubleMatrix res = svd[0].mmul(s).mmul(svd[0].transpose()).mmul(img);
@@ -196,7 +208,7 @@ public class Utils {
         }
         for(int i = 0; i < height; i++) {
             for(int j = 0; j < width; j++) {
-                int col = ((int)img[0].get(i,j) << 16) | ((int)img[1].get(i,j) << 8) | (int)img[2].get(i,j);
+                int col = ((int)img[2].get(i,j) << 16) | ((int)img[1].get(i,j) << 8) | (int)img[0].get(i,j);
                 image.setRGB(j,i, col);
             }
         }
