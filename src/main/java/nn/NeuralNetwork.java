@@ -98,7 +98,7 @@ public class NeuralNetwork {
             compareResults(Utils.computeResults(testRes), testLab);
 
         }
-        write(name);
+        write(name+set);
     }
 
     public void crossValidation(Loader loader, int k, int iterations, int batchSize, double momentum, double alpha) {
