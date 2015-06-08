@@ -14,7 +14,7 @@ import java.io.IOException;
  * @author Tim Jassmann
  * @version 05/26/2015
  */
-public class FCLayer {
+public class FullyConnectedLayer {
 	private int inputSize;
 	private int outputSize;
 	private double lambda;
@@ -38,7 +38,7 @@ public class FCLayer {
      * @param dropout percentage of neurons to drop out in training
      * @param activationFunction activation function of layer
      */
-	public FCLayer(int inputSize, int outputSize, double lambda, double dropout, int activationFunction) {
+	public FullyConnectedLayer(int inputSize, int outputSize, double lambda, double dropout, int activationFunction) {
 		this.inputSize = inputSize;
 		this.outputSize = outputSize;
 		this.lambda = lambda;
@@ -72,7 +72,7 @@ public class FCLayer {
      * @param gradients The gradients to check
      * @param cnn The network to check the gradients with
      */
-	public void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn) {
+	protected void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn) {
 		double epsilon = 1e-7;
         this.lambda = 0;
 		DoubleMatrix biasG = new DoubleMatrix(bias.rows, bias.columns);
@@ -119,9 +119,9 @@ public class FCLayer {
      * Return:
      * @return gradients of the layer
      */
-	public Gradients cost(DoubleMatrix input, DoubleMatrix output, DoubleMatrix delta, DoubleMatrix labels) {
+	public Gradients computeGradient(DoubleMatrix input, DoubleMatrix output, DoubleMatrix delta, DoubleMatrix labels) {
         DoubleMatrix res = input.mmul(theta).addRowVector(bias);
-        double aGrad = Utils.aGrad(activationFunction, res, delta);
+        double aGrad = Utils.aGradient(activationFunction, res, delta);
 		delta.muli(Utils.activationGradient(activationFunction, output, a)).muli(output.ne(0));
 		//delta2
 		DoubleMatrix delta2 = delta.mmul(theta.transpose());
@@ -145,7 +145,7 @@ public class FCLayer {
      * Return:
      * @return gradient propagated through the layer
      */
-	public DoubleMatrix backpropagation(Gradients gradients, double momentum, double alpha) {
+	public DoubleMatrix updateWeights(Gradients gradients, double momentum, double alpha) {
 		biasVelocity.muli(momentum).add(gradients.biasGrad.mul(alpha));
 		thetaVelocity.muli(gradients.thetaGrad.ne(0).mul(momentum)).addi(gradients.thetaGrad.mul(alpha));
         aVelocity = aVelocity * momentum + gradients.aGrad * alpha;
@@ -196,23 +196,6 @@ public class FCLayer {
         }
         return res;
     }*/
-
-    /**
-     * writeLayer - writes the weights of layer to a buffer.
-     *
-     * Parameters:
-     * @param writer the buffer to write to
-     */
-	public void writeLayer(BufferedWriter writer) {
-		try {
-            writer.write(activationFunction+","+a+","+true+"\n");
-            Utils.printMatrix(theta, writer);
-            Utils.printMatrix(bias, writer);
-		}
-		catch(IOException e) {
-			e.printStackTrace();
-		}
-	}
 
     public DeviceFullyConnectedLayer getDevice() {
         Matrix t = new Matrix(theta.toArray2());

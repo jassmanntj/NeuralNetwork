@@ -6,7 +6,6 @@ import org.imgscalr.Scalr.Rotation;
 import org.jblas.DoubleMatrix;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.File;
@@ -114,7 +113,7 @@ public class ImageLoader extends Loader {
                 images[k++] = imgArr[j];
             }
         }
-        return Utils.normalizeData(images);
+        return Utils.ZCAWhiten(Utils.normalizeData(images), 1e-4);
     }
 
     public DoubleMatrix[][] getTestData(int i, int batches) {
@@ -126,7 +125,7 @@ public class ImageLoader extends Loader {
                 images[k++] = imgArr[j];
             }
         }
-        return Utils.normalizeData(images);
+        return Utils.ZCAWhiten(Utils.normalizeData(images), 1e-4);
     }
 
     private int[] countImages(File folder, HashMap<String, Double> labelMap) {
@@ -141,61 +140,7 @@ public class ImageLoader extends Loader {
         return count;
     }
 
-	public ArrayList<String> getNames(File folder) {
-		if(names == null) {
-			names = new ArrayList<String>();
-			for(File leaf : folder.listFiles()) {
-				if(leaf.isDirectory()) {
-                    for(File image : leaf.listFiles()) {
-                        names.add(image.getName());
-                    }
-				}
-			}
-		}
-		return names;
-	}
 
-    public static DoubleMatrix sample(final int patchRows, final int patchCols, final int numPatches, final DoubleMatrix[][] images) {
-        final DoubleMatrix patches = new DoubleMatrix(numPatches, images[0].length*patchRows*patchCols);
-        class Patcher implements Runnable {
-            private int threadNo;
-
-            public Patcher(int threadNo) {
-                this.threadNo = threadNo;
-            }
-
-            @Override
-            public void run() {
-                int count = numPatches / Utils.NUMTHREADS;
-                for (int i = 0; i < count; i++) {
-                    if(i%500 == 0)
-                        System.out.println(threadNo+":"+i);
-                    Random rand = new Random();
-                    int randomImage = rand.nextInt(images.length);
-                    int randomY = rand.nextInt(images[randomImage][0].rows - patchRows + 1);
-                    int randomX = rand.nextInt(images[randomImage][0].columns - patchCols + 1);
-                    DoubleMatrix ch = null;
-                    for (int j = 0; j < images[randomImage].length; j++) {
-                        DoubleMatrix patch = images[randomImage][j].getRange(randomY, randomY + patchRows, randomX, randomX + patchCols);
-                        patch = patch.reshape(1, patchRows * patchCols);
-                        if(ch == null) ch = patch;
-                        else ch = DoubleMatrix.concatHorizontally(ch, patch);
-                    }
-                    patches.putRow(threadNo*count+i, ch);
-                }
-            }
-        }
-        ExecutorService executor = Executors.newFixedThreadPool(Utils.NUMTHREADS);
-        for(int i = 0; i < Utils.NUMTHREADS; i++) {
-            if (i % 1000 == 0)
-                System.out.println(i);
-            Runnable patcher = new Patcher(i);
-            executor.execute(patcher);
-        }
-        executor.shutdown();
-        while(!executor.isTerminated());
-        return patches;//normalizeData(patches);
-    }
 
     public DoubleMatrix[][] getData() {
         return Utils.normalizeData(imgArr);

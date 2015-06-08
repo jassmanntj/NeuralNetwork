@@ -17,18 +17,18 @@ import java.util.Random;
  */
 public class NeuralNetwork {
     private StructuredLayer[] cls;
-    private FCLayer[] lds;
+    private FullyConnectedLayer[] lds;
     private String name;
     private Random r;
-    private double cost;
+    private double computeGradient;
     private double previousCost;
     private static final boolean DEBUG = false;
 
-    public NeuralNetwork(StructuredLayer[] cls, FCLayer[] lds, String name) {
+    public NeuralNetwork(StructuredLayer[] cls, FullyConnectedLayer[] lds, String name) {
         this.cls = cls;
         this.lds = lds;
         this.name = name;
-        this.cost = 1e9;
+        this.computeGradient = 1e9;
         r = new Random(System.currentTimeMillis());
     }
 
@@ -38,10 +38,9 @@ public class NeuralNetwork {
             indices[i] = i;
         }
         for(int i = 0; i < iterations; i++) {
-            previousCost = cost;
+            previousCost = computeGradient;
             System.out.println("Alpha: "+alpha);
             shuffleIndices(indices, indices.length);
-            boolean br = false;
             for(int j = 0; j < input.length/batchSize; j++) {
                 System.out.print(j + " ");
                 DoubleMatrix[][] in = new DoubleMatrix[batchSize][input[0].length];
@@ -52,7 +51,7 @@ public class NeuralNetwork {
                     }
                     labs.putRow(k, labels.getRow(indices[j*batchSize+k]));
                 }
-                Utils.alter(in);
+                Utils.alterImages(in);
 
                 if(DEBUG) gradientCheck(in, labs);
                 DoubleMatrix[][][] convResults = new DoubleMatrix[cls.length+1][][];
@@ -67,31 +66,22 @@ public class NeuralNetwork {
                 }
                 DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labs);
                 for(int k = lds.length-1; k >= 0; k--) {
-                    Gradients cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta, labs);
-                    delta = lds[k].backpropagation(cr, momentum, alpha);
-                    if(Double.isNaN(lds[k].getA())) {
-                        System.out.println("FC"+k);
-                        br = true;
-                    }
+                    Gradients cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta, labs);
+                    delta = lds[k].updateWeights(cr, momentum, alpha);
 
                 }
                 Gradients cr;
                 DoubleMatrix[][] delt = Utils.expand(delta, convResults[cls.length][0].length, convResults[cls.length][0][0].rows, convResults[cls.length][0][0].columns);
                 for(int k = cls.length-1; k >= 0; k--) {
-                    cr = cls[k].cost(convResults[k], convResults[k + 1], delt);
-                    delt = cls[k].backpropagation(cr, momentum, alpha);
-                    if(Double.isNaN(cls[k].getA())) {
-                        System.out.println("CLS"+k);
-                        br = true;
-                    }
+                    cr = cls[k].computeGradient(convResults[k], convResults[k + 1], delt);
+                    delt = cls[k].updateWeights(cr, momentum, alpha);
                 }
-                if(br) break;
             }
             System.out.println("\nSet: "+set+"\nIteration "+i);
 
             System.out.println("Train");
             DoubleMatrix res = compute(input, batchSize, labels);
-            if(cost > previousCost) alpha *= 0.75;
+            if(computeGradient > previousCost) alpha *= 0.75;
             boolean finished = compareResults(Utils.computeResults(res), labels);
             System.out.println("Test");
             DoubleMatrix testRes = compute(test, testLab);
@@ -197,13 +187,13 @@ public class NeuralNetwork {
         Gradients cr;
         DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
         for(int k = lds.length-1; k >= 0; k--) {
-            cr = lds[k].cost(ldsResults[k], ldsResults[k+1], delta, labels);
+            cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta, labels);
             delta = cr.delta;
             lds[k].gradientCheck(input, labels, cr, this);
         }
         DoubleMatrix[][] delt = Utils.expand(delta, convResults[cls.length][0].length, convResults[cls.length][0][0].rows, convResults[cls.length][0][0].columns);
         for(int k = cls.length-1; k >= 0; k--) {
-            cr = cls[k].cost(convResults[k], convResults[k+1], delt);
+            cr = cls[k].computeGradient(convResults[k], convResults[k + 1], delt);
 
             delt = cls[k].gradientCheck(cr, input, labels, this);
         }
@@ -243,7 +233,7 @@ public class NeuralNetwork {
 
     public DoubleMatrix compute(DoubleMatrix[][] input, int batchSize, DoubleMatrix labels) {
         DoubleMatrix res = null;
-        cost = 0;
+        computeGradient = 0;
         for(int j = 0; j < input.length/batchSize; j++) {
             DoubleMatrix[][] in = new DoubleMatrix[batchSize][];
             DoubleMatrix labs = labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns);
@@ -261,9 +251,9 @@ public class NeuralNetwork {
             if (res == null) res = out;
             else res = DoubleMatrix.concatVertically(res, out);
             DoubleMatrix p = MatrixFunctions.log(out);
-            cost += -p.mul(labs).sum() / (out.rows*(input.length/batchSize));
+            computeGradient += -p.mul(labs).sum() / (out.rows*(input.length/batchSize));
         }
-        System.out.println("Cost: "+cost);
+        System.out.println("computeGradient: "+computeGradient);
         return res;
     }
 
@@ -277,8 +267,8 @@ public class NeuralNetwork {
         }
         DoubleMatrix out = lds[lds.length-1].compute(fin);
         DoubleMatrix p = MatrixFunctions.log(out);
-        cost = -p.mul(labels).sum() / out.rows;
-        System.out.println("Cost: "+cost);
+        computeGradient = -p.mul(labels).sum() / out.rows;
+        System.out.println("computeGradient: "+computeGradient);
         return out;
     }
 

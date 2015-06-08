@@ -11,32 +11,17 @@ import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Utils {
+public abstract class Utils {
     public static final int NUMTHREADS = 8;
     public static final int NONE = 0;
     public static final int SIGMOID = 1;
     public static final int PRELU = 2;
     public static final int RELU = 3;
     public static final int SOFTMAX = 4;
-    public static final int CONVLAYER = 0;
-    public static final int POOLLAYER = 1;
-
-	/*public static DoubleMatrix ZCAWhiten(DoubleMatrix input, double epsilon) {
-        input.subiColumnVector(input.rowMeans());
-        DoubleMatrix sigma = DoubleMatrix.diag(DoubleMatrix.diag(input.transpose().mmul(input)));
-		sigma.divi(input.rows);
-		DoubleMatrix[] svd = Singular.fullSVD(sigma);
-		DoubleMatrix ZCAWhite = svd[1];
-		ZCAWhite.addi(epsilon);
-        MatrixFunctions.sqrti(ZCAWhite);
-		ZCAWhite.rdivi(1);
-		ZCAWhite = DoubleMatrix.diag(ZCAWhite);
-		ZCAWhite = svd[0].mmul(ZCAWhite).mmul(svd[0].transpose());
-		return ZCAWhite.mmul(input);
-	}*/
 
     public static DoubleMatrix[][] normalizeData(DoubleMatrix[][] data) {
         for(int i = 0; i < data.length; i++) {
@@ -54,15 +39,15 @@ public class Utils {
         DoubleMatrix img = flatten(input);
         DoubleMatrix mean = img.rowMeans();
         img.subiColumnVector(mean);
-        DoubleMatrix sigma = img.transpose().mmul(img).div(img.rows);
-        //sigma = DoubleMatrix.diag(sigma);
+        DoubleMatrix sigma = img.mmul(img.transpose()).div(img.rows);
+        sigma = DoubleMatrix.diag(DoubleMatrix.diag(sigma));
         DoubleMatrix[] svd = Singular.fullSVD(sigma);
         DoubleMatrix s = DoubleMatrix.diag(MatrixFunctions.sqrt(svd[1].add(epsilon)).rdiv(1));
         DoubleMatrix res = svd[0].mmul(s).mmul(svd[0].transpose()).mmul(img);
         return expand(res, input[0].length, input[0][0].rows, input[0][0].columns);
     }
 
-    public static DoubleMatrix[][] expand(DoubleMatrix in, int channels, int rows, int cols) {
+    protected static DoubleMatrix[][] expand(DoubleMatrix in, int channels, int rows, int cols) {
         DoubleMatrix[][] result = new DoubleMatrix[in.rows][channels];
         for(int i = 0; i < in.rows; i++) {
             for(int j = 0; j < channels; j++) {
@@ -77,7 +62,7 @@ public class Utils {
         return result;
     }
 
-	public static DoubleMatrix conv2d(DoubleMatrix input, DoubleMatrix kernel, boolean valid) {
+	public static DoubleMatrix convolve(DoubleMatrix input, DoubleMatrix kernel, boolean valid) {
 		int inputRows = input.rows;
 		int inputCols = input.columns;
 		int kernelRows = kernel.rows;
@@ -108,87 +93,34 @@ public class Utils {
         }
 	}
 	
-	public static DoubleMatrix reverseMatrix(DoubleMatrix mat) {
+	protected static DoubleMatrix reverseMatrix(DoubleMatrix mat) {
 		mat = flipHorizontal(mat);
 		return flipVerticali(mat);
 	}
 
-    public static DoubleMatrix flipHorizontal(DoubleMatrix mat) {
+    private static DoubleMatrix flipHorizontal(DoubleMatrix mat) {
         mat = mat.dup();
         return flipHorizontali(mat);
     }
 
-    public static DoubleMatrix flipVertical(DoubleMatrix mat) {
+    private static DoubleMatrix flipVertical(DoubleMatrix mat) {
         mat = mat.dup();
         return flipVerticali(mat);
     }
 
-    public static DoubleMatrix flipHorizontali(DoubleMatrix mat) {
+    private static DoubleMatrix flipHorizontali(DoubleMatrix mat) {
         for(int i = 0; i < mat.rows/2; i++) {
             mat.swapRows(i, mat.rows-i-1);
         }
         return mat;
     }
 
-    public static DoubleMatrix flipVerticali(DoubleMatrix mat) {
+    private static DoubleMatrix flipVerticali(DoubleMatrix mat) {
         for(int i = 0; i < mat.columns/2; i++) {
             mat.swapColumns(i, mat.columns-i-1);
         }
         return mat;
     }
-	
-	public static void visualizeColor(int width, int height, int images, DoubleMatrix img, String filename) throws IOException {
-		BufferedImage image = new BufferedImage(width*images+images*2+2, height*images+images*2+2, BufferedImage.TYPE_INT_RGB);
-		DoubleMatrix tht1 = img.dup();
-		tht1.subi(tht1.min());
-		tht1.divi(tht1.max());
-		tht1.muli(255);
-		for(int k = 0; k < images; k++) {
-			for(int l = 0; l < images; l++) {
-				if(k*images+l < tht1.rows) { 
-					DoubleMatrix row = tht1.getRow(k*images+l);
-					int channelSize = row.length/3;
-					double[] r = new double[channelSize];
-					double[] g = new double[channelSize];
-					double[] b = new double[channelSize];
-					System.arraycopy(row.data, 0, r, 0, channelSize);
-					System.arraycopy(row.data, channelSize, g, 0, channelSize);
-					System.arraycopy(row.data, 2 * channelSize, b, 0, channelSize);
-					for(int i = 0; i < height; i++) {
-						for(int j = 0; j < width; j++) {
-							int col = ((int)r[i*width+j] << 16) | ((int)g[i*width+j] << 8) | (int)b[i*width+j];
-							image.setRGB(l*(width+2)+2+j, k*(height+2)+2+i, col);
-						}
-					}
-				}
-			}
-		}
-		File imageFile = new File(filename);
-		ImageIO.write(image, "png", imageFile);
-	}
-	
-	public static void visualize(int size, int images, DoubleMatrix input, String filename) throws IOException {
-		BufferedImage image = new BufferedImage((size+2)*images+2, (size+2)*images+2, BufferedImage.TYPE_INT_RGB);
-		DoubleMatrix tht1 = input.dup();
-		tht1.subi(tht1.min());
-		tht1.divi(tht1.max());
-		tht1.muli(255);
-		System.out.println(tht1.getRow(0));
-		for(int k = 0; k < images; k++) {
-			for(int l = 0; l < images; l++) {
-				for(int i = 0; i < size; i++) {
-					for(int j = 0; j < size; j++) {
-						int imageNo = (int)(Math.random() * 9999);
-						int val = (int)tht1.get(imageNo,i*size+j);
-						int col = (val << 16) | (val << 8) | val;
-						image.setRGB(l*(2+size)+2+j, k*(2+size)+2+i, col);
-					}
-				}
-			}
-		}
-		File imageFile = new File(filename);
-		ImageIO.write(image, "png", imageFile);
-	}
 
     public static void visualizeColorImg(DoubleMatrix[] img, String filename) throws IOException {
         int width = img[0].columns;
@@ -216,11 +148,11 @@ public class Utils {
         ImageIO.write(image, "png", imageFile);
     }
 	
-	public static DoubleMatrix sigmoid(DoubleMatrix z) {
+	private static DoubleMatrix sigmoid(DoubleMatrix z) {
 		return MatrixFunctions.exp(z.neg()).add(1).rdiv(1);
 	}
 	
-	public static DoubleMatrix sigmoidGradient(DoubleMatrix a) {
+	private static DoubleMatrix sigmoidGradient(DoubleMatrix a) {
 		return a.rsub(1).mul(a);
 	}
 	
@@ -261,7 +193,49 @@ public class Utils {
         return images;
     }
 
-    public static double aGrad(int type, DoubleMatrix result, DoubleMatrix delta) {
+    public static DoubleMatrix samplePatches(final int patchRows, final int patchCols, final int numPatches, final DoubleMatrix[][] images) {
+        final DoubleMatrix patches = new DoubleMatrix(numPatches, images[0].length*patchRows*patchCols);
+        class Patcher implements Runnable {
+            private int threadNo;
+
+            public Patcher(int threadNo) {
+                this.threadNo = threadNo;
+            }
+
+            @Override
+            public void run() {
+                int count = numPatches / Utils.NUMTHREADS;
+                for (int i = 0; i < count; i++) {
+                    if(i%500 == 0)
+                        System.out.println(threadNo+":"+i);
+                    Random rand = new Random();
+                    int randomImage = rand.nextInt(images.length);
+                    int randomY = rand.nextInt(images[randomImage][0].rows - patchRows + 1);
+                    int randomX = rand.nextInt(images[randomImage][0].columns - patchCols + 1);
+                    DoubleMatrix ch = null;
+                    for (int j = 0; j < images[randomImage].length; j++) {
+                        DoubleMatrix patch = images[randomImage][j].getRange(randomY, randomY + patchRows, randomX, randomX + patchCols);
+                        patch = patch.reshape(1, patchRows * patchCols);
+                        if(ch == null) ch = patch;
+                        else ch = DoubleMatrix.concatHorizontally(ch, patch);
+                    }
+                    patches.putRow(threadNo*count+i, ch);
+                }
+            }
+        }
+        ExecutorService executor = Executors.newFixedThreadPool(Utils.NUMTHREADS);
+        for(int i = 0; i < Utils.NUMTHREADS; i++) {
+            if (i % 1000 == 0)
+                System.out.println(i);
+            Runnable patcher = new Patcher(i);
+            executor.execute(patcher);
+        }
+        executor.shutdown();
+        while(!executor.isTerminated());
+        return patches;//normalizeData(patches);
+    }
+
+    protected static double aGradient(int type, DoubleMatrix result, DoubleMatrix delta) {
         double aGrad = 0;
         switch(type) {
             case PRELU:
@@ -276,17 +250,7 @@ public class Utils {
         }
     }
 
-    public static void printMatrix(DoubleMatrix mat, BufferedWriter writer) throws IOException {
-        for(int i = 0; i < mat.rows; i++) {
-            for(int j = 0; j < mat.columns; j++) {
-                writer.write(mat.get(i,j)+" ");
-            }
-            writer.write("\n");
-        }
-        writer.write("\n");
-    }
-
-    public static void alter(DoubleMatrix[][] images) {
+    public static void alterImages(DoubleMatrix[][] images) {
         class AlterThread implements Runnable {
             private DoubleMatrix[] image;
 
@@ -332,7 +296,7 @@ public class Utils {
         while(!executor.isTerminated());
     }
 
-    public static double aGrad(int type, DoubleMatrix[][] result, DoubleMatrix[][] delta) {
+    public static double aGradient(int type, DoubleMatrix[][] result, DoubleMatrix[][] delta) {
         double aGrad = 0;
         switch(type) {
             case PRELU:
@@ -391,7 +355,7 @@ public class Utils {
         }
     }
 
-    public static DoubleMatrix prelu(DoubleMatrix z, double a) {
+    private static DoubleMatrix prelu(DoubleMatrix z, double a) {
         //return z.le(0).mul(a-1).add(1).mul(z);
         DoubleMatrix res = z.dup();
         for(int i = 0; i < res.rows; i++) {
@@ -403,11 +367,11 @@ public class Utils {
         return res;
     }
 
-    public static DoubleMatrix relu(DoubleMatrix z) {
+    private static DoubleMatrix relu(DoubleMatrix z) {
         return prelu(z, 0);
     }
 
-    public static DoubleMatrix preluGradient(DoubleMatrix z, double a) {
+    private static DoubleMatrix preluGradient(DoubleMatrix z, double a) {
         //return z.le(0).mul(a-1).add(1);
         DoubleMatrix res = new DoubleMatrix(z.rows, z.columns);
         for(int i = 0; i < z.rows; i++) {
@@ -419,7 +383,7 @@ public class Utils {
         return res;
     }
 
-    public static DoubleMatrix reluGradient(DoubleMatrix z) {
+    private static DoubleMatrix reluGradient(DoubleMatrix z) {
         return z.gt(0);
     }
 

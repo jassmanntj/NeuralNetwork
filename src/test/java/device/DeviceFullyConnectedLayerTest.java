@@ -2,7 +2,7 @@ package device;
 
 import Jama.Matrix;
 import junit.framework.TestCase;
-import nn.FCLayer;
+import nn.FullyConnectedLayer;
 import nn.Utils;
 import org.jblas.DoubleMatrix;
 import org.junit.Test;
@@ -14,7 +14,7 @@ public class DeviceFullyConnectedLayerTest extends TestCase {
         int output = 10;
         double lambda = 5e-5;
         double dropout = 0.5;
-        FCLayer fc = new FCLayer(input, output, lambda, dropout, Utils.PRELU);
+        FullyConnectedLayer fc = new FullyConnectedLayer(input, output, lambda, dropout, Utils.PRELU);
         DeviceFullyConnectedLayer dfc = fc.getDevice();
 
         DoubleMatrix in = DoubleMatrix.randn(1,100);

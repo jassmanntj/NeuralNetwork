@@ -41,11 +41,11 @@ public class PoolingLayer extends StructuredLayer {
         return result;
     }
 
-    public DoubleMatrix[][] backpropagation(Gradients cr, double momentum, double alpha) {
+    public DoubleMatrix[][] updateWeights(Gradients cr, double momentum, double alpha) {
         return cr.delt;
     }
 
-    public Gradients cost(final DoubleMatrix[][] input, final DoubleMatrix[][] output, final DoubleMatrix delta[][]) {
+    public Gradients computeGradient(final DoubleMatrix[][] input, final DoubleMatrix[][] output, final DoubleMatrix delta[][]) {
         DoubleMatrix[][] result = new DoubleMatrix[delta.length][delta[0].length];
         switch(type) {
             case MAX:
@@ -133,16 +133,6 @@ public class PoolingLayer extends StructuredLayer {
             return expandedMatrix;
         }
         else return in;
-    }
-
-    public void writeLayer(BufferedWriter writer) {
-        try {
-            writer.write(Utils.POOLLAYER+"\n");
-            writer.write(poolDim+"\n");
-        }
-        catch(IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public DeviceStructuredLayer getDevice() {

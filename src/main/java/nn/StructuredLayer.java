@@ -13,15 +13,9 @@ public abstract class StructuredLayer {
     protected DoubleMatrix[][] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
         return null;
     }
-    public abstract DoubleMatrix[][] backpropagation(Gradients cr, double momentum, double alpha);
-    public abstract Gradients cost(final DoubleMatrix[][] input, final DoubleMatrix[][] output, final DoubleMatrix delta[][]);
-    protected double getA() {
-        return 0;
-    }
-    public void pretrain(DoubleMatrix[][] images, int iterations){
-    }
-    public abstract void writeLayer(BufferedWriter writer);
-    protected DoubleMatrix[][] feedForward(DoubleMatrix[][] in) {
+    public abstract DoubleMatrix[][] updateWeights(Gradients cr, double momentum, double alpha);
+    public abstract Gradients computeGradient(final DoubleMatrix[][] input, final DoubleMatrix[][] output, final DoubleMatrix delta[][]);
+    public DoubleMatrix[][] feedForward(DoubleMatrix[][] in) {
         return compute(in);
     };
     public abstract DeviceStructuredLayer getDevice();

@@ -15,12 +15,12 @@ public class DeviceUtilsTest extends TestCase {
         Matrix m1 = new Matrix(dm1.toArray2());
         Matrix m2 = new Matrix(dm2.toArray2());
 
-        DoubleMatrix dout = Utils.conv2d(dm1, dm2, true);
+        DoubleMatrix dout = Utils.convolve(dm1, dm2, true);
         Matrix mout = DeviceUtils.conv2d(m1, m2);
 
         for(int i = 0; i < dout.rows; i++) {
             for(int j = 0; j < dout.columns; j++) {
-                assertEquals("Conv2d "+i+":"+j, dout.get(i,j), mout.get(i,j), 1e-5);
+                assertEquals("convolve "+i+":"+j, dout.get(i,j), mout.get(i,j), 1e-5);
             }
         }
     }
