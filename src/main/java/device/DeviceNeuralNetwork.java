@@ -34,12 +34,12 @@ public class DeviceNeuralNetwork implements Serializable{
      * @return The output of the network
      */
     public Matrix compute(Matrix[] input) {
-        for(int i = 0; i < structuredLayers.length; i++) {
-            input = structuredLayers[i].compute(input);
+        for (DeviceStructuredLayer structuredLayer : structuredLayers) {
+            input = structuredLayer.compute(input);
         }
         Matrix in = DeviceUtils.flatten(input);
-        for(int i = 0; i < fullyConnectedLayers.length; i++) {
-            in = fullyConnectedLayers[i].compute(in);
+        for (DeviceFullyConnectedLayer fullyConnectedLayer : fullyConnectedLayers) {
+            in = fullyConnectedLayer.compute(in);
         }
         return in;
     }

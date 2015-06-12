@@ -25,11 +25,11 @@ public abstract class DeviceUtils {
      * @return normalized data
      */
     public static Matrix[] normalizeData(Matrix[] data) {
-        for(int j = 0; j < data.length; j++) {
-            data[j].minusEquals(new Matrix(data[j].getRowDimension(), data[j].getColumnDimension(), mean(data[j])));
-            double var = mean(data[j].arrayTimes(data[j]));
+        for (Matrix channel : data) {
+            channel.minusEquals(new Matrix(channel.getRowDimension(), channel.getColumnDimension(), mean(channel)));
+            double var = mean(channel.arrayTimes(channel));
             double stdev = Math.sqrt(var);
-            data[j].timesEquals(1 / stdev);
+            channel.timesEquals(1 / stdev);
         }
         return data;
     }
