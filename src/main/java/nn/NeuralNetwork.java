@@ -10,6 +10,7 @@ import org.jblas.MatrixFunctions;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -86,12 +87,18 @@ public class NeuralNetwork {
             if(cost > previousCost) alpha *= 0.75;
             previousCost = cost;
             compareResults(Utils.computeResults(res), labels);
-            System.out.println("Test");
-            DoubleMatrix testRes = compute(test, testLab);
-            compareResults(Utils.computeResults(testRes), testLab);
+            if(test != null) {
+                System.out.println("Test");
+                DoubleMatrix testRes = compute(test, testLab);
+                compareResults(Utils.computeResults(testRes), testLab);
+            }
 
         }
         write(name+set);
+    }
+
+    public void train(DoubleMatrix[][] input, DoubleMatrix labels, int iterations, int batchSize, double momentum, double alpha, int set) {
+        train(input, labels, null, null, iterations, batchSize, momentum, alpha, set);
     }
 
     public void crossValidation(Loader loader, int k, int iterations, int batchSize, double momentum, double alpha) {
@@ -177,9 +184,10 @@ public class NeuralNetwork {
         return -p.mul(labels).sum() / input.length;
     }
 
-    public void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels) {
+    public double[][] gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels) {
         DoubleMatrix[][][] convResults = new DoubleMatrix[cls.length+1][][];
         convResults[0] = input;
+        double[][] results = new double[lds.length+cls.length][];
         for(int i = 0; i < cls.length; i++) {
             convResults[i+1] = cls[i].feedForward(convResults[i]);
         }
@@ -193,14 +201,15 @@ public class NeuralNetwork {
         for(int k = lds.length-1; k >= 0; k--) {
             cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta, labels);
             delta = cr.delta;
-            lds[k].gradientCheck(input, labels, cr, this);
+            results[cls.length+k] = lds[k].gradientCheck(input, labels, cr, this);
         }
         DoubleMatrix[][] delt = Utils.expand(delta, convResults[cls.length][0].length, convResults[cls.length][0][0].rows, convResults[cls.length][0][0].columns);
         for(int k = cls.length-1; k >= 0; k--) {
             cr = cls[k].computeGradient(convResults[k], convResults[k + 1], delt);
-
-            delt = cls[k].gradientCheck(cr, input, labels, this);
+            results[k] = cls[k].gradientCheck(cr, input, labels, this);
+            delt = cr.delt;
         }
+        return results;
     }
 
     private void shuffleIndices(int[] indices, int iterations) {

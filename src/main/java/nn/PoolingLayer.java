@@ -66,8 +66,8 @@ public class PoolingLayer extends StructuredLayer {
         return new Gradients(null, null, result, 0);
     }
 
-    public DoubleMatrix[][] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
-        return cr.delt;
+    public double[] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
+        return new double[0];
     }
 
     private DoubleMatrix meanPool(DoubleMatrix convolvedFeature) {

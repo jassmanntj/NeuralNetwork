@@ -10,8 +10,8 @@ import java.io.BufferedWriter;
  */
 public abstract class StructuredLayer {
     public abstract DoubleMatrix[][] compute(DoubleMatrix[][] in);
-    protected DoubleMatrix[][] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
-        return null;
+    protected double[] gradientCheck(Gradients cr, DoubleMatrix[][] in, DoubleMatrix labels, NeuralNetwork cnn) {
+        return new double[0];
     }
     public abstract DoubleMatrix[][] updateWeights(Gradients cr, double momentum, double alpha);
     public abstract Gradients computeGradient(final DoubleMatrix[][] input, final DoubleMatrix[][] output, final DoubleMatrix delta[][]);

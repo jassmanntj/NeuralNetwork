@@ -12,7 +12,7 @@ import java.io.IOException;
  * FCLayer - Fully Connected layer
  *
  * @author Tim Jassmann
- * @version 05/26/2015
+ * @version 06/12/15
  */
 public class FullyConnectedLayer {
 	private int inputSize;
@@ -26,7 +26,6 @@ public class FullyConnectedLayer {
     private double a;
     private double aVelocity;
     private double dropout;
-    private DoubleMatrix res;
 
     /**
      * FCLayer - constructor for FCLayer class
@@ -51,6 +50,14 @@ public class FullyConnectedLayer {
         return a;
     }
 
+    public DoubleMatrix getTheta() {
+        return theta;
+    }
+
+    public DoubleMatrix getBias() {
+        return bias;
+    }
+
     /**
      * initializeParams - initializes theta, bias, and a values.
      */
@@ -72,9 +79,10 @@ public class FullyConnectedLayer {
      * @param gradients The gradients to check
      * @param cnn The network to check the gradients with
      */
-	protected void gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn) {
+	protected double[] gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, Gradients gradients, NeuralNetwork cnn) {
 		double epsilon = 1e-7;
         this.lambda = 0;
+        double[] results = new double[3];
 		DoubleMatrix biasG = new DoubleMatrix(bias.rows, bias.columns);
 		for(int i = 0; i < bias.length; i++) {
 			bias.put(i, bias.get(i)+epsilon);
@@ -86,7 +94,7 @@ public class FullyConnectedLayer {
 		}
 		DoubleMatrix biasA = biasG.add(gradients.biasGrad);
 		DoubleMatrix biasS = biasG.sub(gradients.biasGrad);
-		System.out.println("SAE Bias Diff: "+biasS.norm2()/biasA.norm2());
+        results[1] = biasS.norm2()/biasA.norm2();
 
 		DoubleMatrix thetaG = new DoubleMatrix(theta.rows, theta.columns);
 		for(int i = 0; i < theta.length; i++) {
@@ -99,7 +107,7 @@ public class FullyConnectedLayer {
 		}
 		DoubleMatrix thetaA = thetaG.add(gradients.thetaGrad);
 		DoubleMatrix thetaS = thetaG.sub(gradients.thetaGrad);
-		System.out.println("SAE Theta Diff: "+thetaS.norm2()/thetaA.norm2());
+        results[0] = thetaS.norm2()/thetaA.norm2();
 
         a += epsilon;
         double gradientsP = cnn.computeCost(input, labels);
@@ -107,7 +115,8 @@ public class FullyConnectedLayer {
         double gradientsM = cnn.computeCost(input, labels);
         a += epsilon;
         double aG = (gradientsP- gradientsM)/(2*epsilon);
-        System.out.println("SAE a: "+ Math.abs((gradients.aGrad - aG) / (gradients.aGrad + aG)));
+        results[1] = Math.abs((gradients.aGrad - aG) / (gradients.aGrad + aG));
+        return results;
 	}
 
     /**
@@ -182,20 +191,9 @@ public class FullyConnectedLayer {
     public DoubleMatrix feedforward(DoubleMatrix input) {
         DoubleMatrix result = input.mmul(theta);
         result.addiRowVector(bias);
-        res = result.mul(DoubleMatrix.rand(result.rows, result.columns).ge(dropout));
+        DoubleMatrix res = result.mul(DoubleMatrix.rand(result.rows, result.columns).ge(dropout));
         return Utils.activationFunction(activationFunction, res, a);
     }
-
-    /*public DoubleMatrix[][] getThetaArr(int patchSize) {
-        int channels = theta.rows/(patchSize*patchSize);
-        DoubleMatrix[][] res = new DoubleMatrix[theta.columns][channels];
-        for(int i = 0; i < theta.columns; i++) {
-            for(int j = 0; j < channels; j++) {
-                res[i][j] = theta.getRange(patchSize*patchSize*j,patchSize*patchSize*(j+1),i,i+1).reshape(patchSize, patchSize);
-            }
-        }
-        return res;
-    }*/
 
     public DeviceFullyConnectedLayer getDevice() {
         Matrix t = new Matrix(theta.toArray2());
