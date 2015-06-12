@@ -40,17 +40,18 @@ public class ImageLoader extends Loader {
         }
         this.lbls = new DoubleMatrix(total,labelMap.size());
         this.imgArr = new DoubleMatrix[total][3];
-
+        int l = 0;
         ExecutorService executor = Executors.newFixedThreadPool(Utils.NUMTHREADS);
         for(File leaf : folder.listFiles()) {
             if(leaf.isDirectory() && labelMap.containsKey(leaf.getName())) {
                 for(File image : leaf.listFiles()) {
                     Runnable ip = new ImageProcessor(image, labelMap.get(leaf.getName()), z);
                     executor.execute(ip);
-                    z += 30;
+                    z += counts[l];
                     z = z%total + z/total;
                 }
             }
+            l++;
         }
         executor.shutdown();
         while(!executor.isTerminated());

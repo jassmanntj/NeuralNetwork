@@ -116,7 +116,7 @@ public class NeuralNetwork {
         }
     }
 
-    private void compareClasses(int[][] result, DoubleMatrix labels, HashMap<String, Double> labelMap) {
+    public void compareClasses(int[][] result, DoubleMatrix labels, HashMap<String, Double> labelMap) {
         HashMap<Double, String> newMap = reverseMap(labelMap);
         double[] count = new double[labels.columns];
         double[] totalCount = new double[labels.columns];

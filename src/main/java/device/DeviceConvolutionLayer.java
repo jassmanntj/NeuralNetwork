@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @version 06/02/2015
  */
 public class DeviceConvolutionLayer extends DeviceStructuredLayer implements Serializable {
-    private Matrix theta[][];
+    private Matrix weights[][];
     private Matrix bias;
     private int activation;
     private double a;
@@ -20,16 +20,16 @@ public class DeviceConvolutionLayer extends DeviceStructuredLayer implements Ser
     /**
      * DeviceConvolutionLayer - A constructor for the device convolution layer
      *
-     * @param theta The weight matrices
+     * @param weights The weight matrices
      * @param bias The bias matrix
      * @param activation The activation function
      * @param a The a value (for the PReLU activation)
      * @param dropout The percent dropout used
      */
-    public DeviceConvolutionLayer(Matrix[][] theta, Matrix bias, int layer1, double a, double dropout) {
-        this.theta = theta;
+    public DeviceConvolutionLayer(Matrix[][] weights, Matrix bias, int activation, double a, double dropout) {
+        this.weights = weights;
         this.bias = bias;
-        this.activation = layer1;
+        this.activation = activation;
         this.a = a;
         this.dropout = dropout;
     }
@@ -42,14 +42,15 @@ public class DeviceConvolutionLayer extends DeviceStructuredLayer implements Ser
      * @return The output of the layer
      */
     public Matrix[] compute(Matrix[] input) {
-        Matrix[] result = new Matrix[theta.length];
-        for (int feature = 0; feature < theta.length; feature++) {
-            Matrix res = new Matrix(input[0].getRowDimension() - theta[0][0].getRowDimension() + 1, input[0].getColumnDimension() - theta[0][0].getColumnDimension() + 1);
-            for (int channel = 0; channel < theta[feature].length; channel++) {
-                res.plusEquals(DeviceUtils.conv2d(input[channel], theta[feature][channel]));
+        Matrix[] result = new Matrix[weights.length];
+        for (int feature = 0; feature < weights.length; feature++) {
+            Matrix res = new Matrix(input[0].getRowDimension() - weights[0][0].getRowDimension() + 1,
+                                    input[0].getColumnDimension() - weights[0][0].getColumnDimension() + 1);
+            for (int channel = 0; channel < weights[feature].length; channel++) {
+                res.plusEquals(DeviceUtils.convolve(input[channel], weights[feature][channel]));
             }
-
-            result[feature] = DeviceUtils.activationFunction(activation, res.plus(new Matrix(res.getRowDimension(), res.getColumnDimension(), bias.get(feature, 0))), a).times(1 - dropout);
+            Matrix featureBias = new Matrix(res.getRowDimension(), res.getColumnDimension(), bias.get(feature, 0));
+            result[feature] = DeviceUtils.activationFunction(activation, res.plus(featureBias), a).times(1 - dropout);
         }
 
 

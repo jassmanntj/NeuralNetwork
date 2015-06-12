@@ -11,18 +11,19 @@ import java.io.Serializable;
  * @version 06/02/2015
  */
 public class DeviceNeuralNetwork implements Serializable{
-    DeviceStructuredLayer[] cls;
-    DeviceFullyConnectedLayer[] fcs;
+    DeviceStructuredLayer[] structuredLayers;
+    DeviceFullyConnectedLayer[] fullyConnectedLayers;
 
     /**
      * DeviceNeuralNetwork - Constructor for the device neural network
      *
-     * @param cls The convolution and pooling layers of the network
-     * @param fcs The fully connected layers of the network
+     * @param structuredLayers The convolution and pooling layers of the network
+     * @param fullyConnectedLayers The fully connected layers of the network
      */
-    public DeviceNeuralNetwork(DeviceStructuredLayer[] cls, DeviceFullyConnectedLayer[] fcs) {
-        this.cls = cls;
-        this.fcs = fcs;
+    public DeviceNeuralNetwork(DeviceStructuredLayer[] structuredLayers,
+                               DeviceFullyConnectedLayer[] fullyConnectedLayers) {
+        this.structuredLayers = structuredLayers;
+        this.fullyConnectedLayers = fullyConnectedLayers;
     }
 
     /**
@@ -33,12 +34,12 @@ public class DeviceNeuralNetwork implements Serializable{
      * @return The output of the network
      */
     public Matrix compute(Matrix[] input) {
-        for(int i = 0; i < cls.length; i++) {
-            input = cls[i].compute(input);
+        for(int i = 0; i < structuredLayers.length; i++) {
+            input = structuredLayers[i].compute(input);
         }
         Matrix in = DeviceUtils.flatten(input);
-        for(int i = 0; i < fcs.length; i++) {
-            in = fcs[i].compute(in);
+        for(int i = 0; i < fullyConnectedLayers.length; i++) {
+            in = fullyConnectedLayers[i].compute(in);
         }
         return in;
     }

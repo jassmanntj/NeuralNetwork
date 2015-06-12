@@ -34,7 +34,7 @@ public class PoolingLayer extends StructuredLayer {
             default:
                 for(int i = 0; i < in.length; i++) {
                     for(int j = 0; j < in[i].length; j++) {
-                        result[i][j] = pool(in[i][j]);
+                        result[i][j] = meanPool(in[i][j]);
                     }
                 }
         }
@@ -70,7 +70,7 @@ public class PoolingLayer extends StructuredLayer {
         return cr.delt;
     }
 
-    private DoubleMatrix pool(DoubleMatrix convolvedFeature) {
+    private DoubleMatrix meanPool(DoubleMatrix convolvedFeature) {
         int resultRows = convolvedFeature.rows/poolDim;
         int resultCols = convolvedFeature.columns/poolDim;
         DoubleMatrix result = new DoubleMatrix(resultRows, resultCols);

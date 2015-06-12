@@ -13,9 +13,9 @@ public abstract class DeviceStructuredLayer {
     /**
      * compute - computes the output of the layer
      *
-     * @param in Input matrices representing each channel of the input
+     * @param input Input matrices representing each channel of the input
      *
      * @return The output of the layer
      */
-    public abstract Matrix[] compute(Matrix[] in);
+    public abstract Matrix[] compute(Matrix[] input);
 }

@@ -13,23 +13,23 @@ import java.io.Serializable;
 public class DeviceFullyConnectedLayer implements Serializable {
     private int activation;
     private double a;
-    private Matrix theta;
+    private Matrix weights;
     private Matrix bias;
     private double dropout;
 
     /**
      * DeviceFullyConnectedLayer - a constructor for the device fully connected layer
      *
-     * @param theta Weight matrix for the layer
+     * @param weights Weight matrix for the layer
      * @param bias Bias matrix for the layer
      * @param activation  Activation function for the layer
      * @param a The a value (for the PReLU activation)
      * @param dropout The percent dropout used
      */
-    public DeviceFullyConnectedLayer(Matrix theta, Matrix bias, int activation, double a, double dropout) {
+    public DeviceFullyConnectedLayer(Matrix weights, Matrix bias, int activation, double a, double dropout) {
         this.activation = activation;
         this.a = a;
-        this.theta = theta;
+        this.weights = weights;
         this.bias = bias;
         this.dropout = dropout;
     }
@@ -42,8 +42,8 @@ public class DeviceFullyConnectedLayer implements Serializable {
      * @return The output of the layer (row vector)
      */
     public Matrix compute(Matrix input) {
-        Matrix result = input.times(theta);
-        if(bias != null) result.plusEquals(bias);
+        Matrix result = input.times(weights);
+        result.plusEquals(bias);
         return DeviceUtils.activationFunction(activation, result, a).times(1 - dropout);
     }
 }

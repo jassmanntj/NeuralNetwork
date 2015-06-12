@@ -9,14 +9,14 @@ import org.junit.Test;
 public class DeviceUtilsTest extends TestCase {
 
     @Test
-    public void testConv2d() throws Exception {
+    public void testConvolve() throws Exception {
         DoubleMatrix dm1 = DoubleMatrix.randn(4,4);
         DoubleMatrix dm2 = DoubleMatrix.randn(2,2);
         Matrix m1 = new Matrix(dm1.toArray2());
         Matrix m2 = new Matrix(dm2.toArray2());
 
         DoubleMatrix dout = Utils.convolve(dm1, dm2, true);
-        Matrix mout = DeviceUtils.conv2d(m1, m2);
+        Matrix mout = DeviceUtils.convolve(m1, m2);
 
         for(int i = 0; i < dout.rows; i++) {
             for(int j = 0; j < dout.columns; j++) {
@@ -55,7 +55,7 @@ public class DeviceUtilsTest extends TestCase {
         Matrix res = new Matrix(dRes.toArray2());
 
         int[][] dOut = Utils.computeResults(dRes);
-        int[] out = DeviceUtils.computeResults(res);
+        int[] out = DeviceUtils.computeRanking(res);
 
         for(int i = 0; i < dOut[0].length; i++) {
             assertEquals("Res " + i, dOut[0][i], out[i], 1e-5);
@@ -106,33 +106,41 @@ public class DeviceUtilsTest extends TestCase {
     @Test
     public void testActivationFunction() throws Exception {
         double a = 0.25;
+
         DoubleMatrix dm = DoubleMatrix.randn(1,10);
         Matrix m = new Matrix(dm.toArray2());
-
         DoubleMatrix sigdm = Utils.activationFunction(Utils.SIGMOID, dm, a);
         Matrix sigm = DeviceUtils.activationFunction(DeviceUtils.SIGMOID, m, a);
-        DoubleMatrix predm = Utils.activationFunction(Utils.PRELU, dm, a);
-        Matrix prem = DeviceUtils.activationFunction(DeviceUtils.PRELU, m, a);
-        DoubleMatrix reldm = Utils.activationFunction(Utils.RELU, dm, a);
-        Matrix relm = DeviceUtils.activationFunction(DeviceUtils.RELU, m, a);
-        DoubleMatrix sofdm = Utils.activationFunction(Utils.SOFTMAX, dm, a);
-        Matrix sofm = DeviceUtils.activationFunction(Utils.SOFTMAX, m, a);
-
         for(int i = 0; i < sigdm.rows; i++) {
             for(int j = 0; j < sigdm.columns; j++) {
                 assertEquals("Sigmoid "+i+":"+j, sigdm.get(i,j), sigm.get(i,j), 1e-5);
             }
         }
-        for(int i = 0; i < reldm.rows; i++) {
-            for(int j = 0; j < reldm.columns; j++) {
-                assertEquals("ReLU "+i+":"+j, reldm.get(i,j), relm.get(i,j), 1e-5);
-            }
-        }
+
+        dm = DoubleMatrix.randn(1,10);
+        m = new Matrix(dm.toArray2());
+        DoubleMatrix predm = Utils.activationFunction(Utils.PRELU, dm, a);
+        Matrix prem = DeviceUtils.activationFunction(DeviceUtils.PRELU, m, a);
         for(int i = 0; i < predm.rows; i++) {
             for(int j = 0; j < predm.columns; j++) {
                 assertEquals("PReLU "+i+":"+j, predm.get(i,j), prem.get(i,j), 1e-5);
             }
         }
+
+        dm = DoubleMatrix.randn(1,10);
+        m = new Matrix(dm.toArray2());
+        DoubleMatrix reldm = Utils.activationFunction(Utils.RELU, dm, a);
+        Matrix relm = DeviceUtils.activationFunction(DeviceUtils.RELU, m, a);
+        for(int i = 0; i < reldm.rows; i++) {
+            for(int j = 0; j < reldm.columns; j++) {
+                assertEquals("ReLU "+i+":"+j, reldm.get(i,j), relm.get(i,j), 1e-5);
+            }
+        }
+
+        dm = DoubleMatrix.randn(1,10);
+        m = new Matrix(dm.toArray2());
+        DoubleMatrix sofdm = Utils.activationFunction(Utils.SOFTMAX, dm, a);
+        Matrix sofm = DeviceUtils.activationFunction(Utils.SOFTMAX, m, a);
         for(int i = 0; i < sofdm.rows; i++) {
             for(int j = 0; j < sofdm.columns; j++) {
                 assertEquals("Softmax "+i+":"+j, sofdm.get(i,j), sofm.get(i,j), 1e-5);
