@@ -37,10 +37,8 @@ public abstract class Utils {
 
     public static DoubleMatrix[][] ZCAWhiten(DoubleMatrix[][] input, double epsilon) {
         DoubleMatrix img = flatten(input);
-        DoubleMatrix mean = img.rowMeans();
-        img.subiColumnVector(mean);
-        DoubleMatrix sigma = img.mmul(img.transpose()).div(img.rows);
-        sigma = DoubleMatrix.diag(DoubleMatrix.diag(sigma));
+        img.subiColumnVector(img.rowMeans());
+        DoubleMatrix sigma = img.mmul(img.transpose()).div(img.columns);
         DoubleMatrix[] svd = Singular.fullSVD(sigma);
         DoubleMatrix s = DoubleMatrix.diag(MatrixFunctions.sqrt(svd[1].add(epsilon)).rdiv(1));
         DoubleMatrix res = svd[0].mmul(s).mmul(svd[0].transpose()).mmul(img);

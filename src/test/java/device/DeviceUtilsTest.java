@@ -30,6 +30,7 @@ public class DeviceUtilsTest extends TestCase {
     public void testZCAWhiten() throws Exception {
         int channels = 3;
         double epsilon = 1e-4;
+
         DoubleMatrix[][] dm = new DoubleMatrix[1][channels];
         Matrix[] m = new Matrix[channels];
         for(int i = 0; i < channels; i++) {
@@ -58,6 +59,28 @@ public class DeviceUtilsTest extends TestCase {
 
         for(int i = 0; i < dOut[0].length; i++) {
             assertEquals("Res " + i, dOut[0][i], out[i], 1e-5);
+        }
+    }
+
+    @Test
+    public void testNormalize() throws Exception {
+        int channels = 3;
+        DoubleMatrix[][] dm = new DoubleMatrix[1][channels];
+        Matrix[] m = new Matrix[channels];
+        for(int i = 0; i < channels; i++) {
+            dm[0][i] = DoubleMatrix.randn(10,10);
+            m[i] = new Matrix(dm[0][i].toArray2());
+        }
+
+        DoubleMatrix[][] dout = Utils.normalizeData(dm);
+        Matrix[] out = DeviceUtils.normalizeData(m);
+
+        for(int i = 0; i < channels; i++) {
+            for(int j = 0; j < dout[0][i].rows; j++) {
+                for(int k = 0; k < dout[0][i].columns; k++) {
+                    assertEquals("Norm "+i+":"+j+":"+k, dout[0][i].get(j,k), out[i].get(j,k), 1e-5);
+                }
+            }
         }
     }
 

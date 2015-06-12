@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -113,7 +112,7 @@ public class ImageLoader extends Loader {
                 images[k++] = imgArr[j];
             }
         }
-        return Utils.ZCAWhiten(Utils.normalizeData(images), 1e-4);
+        return Utils.normalizeData(images);
     }
 
     public DoubleMatrix[][] getTestData(int i, int batches) {
@@ -125,7 +124,7 @@ public class ImageLoader extends Loader {
                 images[k++] = imgArr[j];
             }
         }
-        return Utils.ZCAWhiten(Utils.normalizeData(images), 1e-4);
+        return Utils.normalizeData(images);
     }
 
     private int[] countImages(File folder, HashMap<String, Double> labelMap) {

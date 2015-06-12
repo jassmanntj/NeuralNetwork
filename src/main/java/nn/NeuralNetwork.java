@@ -1,5 +1,6 @@
 package nn;
 
+import Jama.Matrix;
 import device.DeviceStructuredLayer;
 import device.DeviceFullyConnectedLayer;
 import device.DeviceNeuralNetwork;
@@ -20,15 +21,17 @@ public class NeuralNetwork {
     private FullyConnectedLayer[] lds;
     private String name;
     private Random r;
-    private double computeGradient;
+    private double cost;
     private double previousCost;
     private static final boolean DEBUG = false;
+    private DoubleMatrix[] ZCAWhite;
 
     public NeuralNetwork(StructuredLayer[] cls, FullyConnectedLayer[] lds, String name) {
         this.cls = cls;
         this.lds = lds;
         this.name = name;
-        this.computeGradient = 1e9;
+        this.cost = 1e9;
+        this.previousCost = 1e9;
         r = new Random(System.currentTimeMillis());
     }
 
@@ -38,7 +41,6 @@ public class NeuralNetwork {
             indices[i] = i;
         }
         for(int i = 0; i < iterations; i++) {
-            previousCost = computeGradient;
             System.out.println("Alpha: "+alpha);
             shuffleIndices(indices, indices.length);
             for(int j = 0; j < input.length/batchSize; j++) {
@@ -81,8 +83,9 @@ public class NeuralNetwork {
 
             System.out.println("Train");
             DoubleMatrix res = compute(input, batchSize, labels);
-            if(computeGradient > previousCost) alpha *= 0.75;
-            boolean finished = compareResults(Utils.computeResults(res), labels);
+            if(cost > previousCost) alpha *= 0.75;
+            previousCost = cost;
+            compareResults(Utils.computeResults(res), labels);
             System.out.println("Test");
             DoubleMatrix testRes = compute(test, testLab);
             compareResults(Utils.computeResults(testRes), testLab);
@@ -104,6 +107,7 @@ public class NeuralNetwork {
     }
 
     public void resetWeights() {
+        previousCost = 1e9;
         for (int i = 0; i < cls.length; i++) {
             cls[i].initializeParameters();
         }
@@ -233,7 +237,7 @@ public class NeuralNetwork {
 
     public DoubleMatrix compute(DoubleMatrix[][] input, int batchSize, DoubleMatrix labels) {
         DoubleMatrix res = null;
-        computeGradient = 0;
+        cost = 0;
         for(int j = 0; j < input.length/batchSize; j++) {
             DoubleMatrix[][] in = new DoubleMatrix[batchSize][];
             DoubleMatrix labs = labels.getRange(j*batchSize, j*batchSize+batchSize, 0, labels.columns);
@@ -251,9 +255,9 @@ public class NeuralNetwork {
             if (res == null) res = out;
             else res = DoubleMatrix.concatVertically(res, out);
             DoubleMatrix p = MatrixFunctions.log(out);
-            computeGradient += -p.mul(labs).sum() / (out.rows*(input.length/batchSize));
+            cost += -p.mul(labs).sum() / (out.rows*(input.length/batchSize));
         }
-        System.out.println("computeGradient: "+computeGradient);
+        System.out.println("cost: "+cost);
         return res;
     }
 
@@ -267,8 +271,8 @@ public class NeuralNetwork {
         }
         DoubleMatrix out = lds[lds.length-1].compute(fin);
         DoubleMatrix p = MatrixFunctions.log(out);
-        computeGradient = -p.mul(labels).sum() / out.rows;
-        System.out.println("computeGradient: "+computeGradient);
+        cost = -p.mul(labels).sum() / out.rows;
+        System.out.println("cost: "+cost);
         return out;
     }
 

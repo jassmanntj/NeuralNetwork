@@ -14,6 +14,25 @@ public abstract class DeviceUtils {
     public static final int RELU = 3;
     public static final int SOFTMAX = 4;
 
+    public static Matrix[] normalizeData(Matrix[] data) {
+        for(int j = 0; j < data.length; j++) {
+            data[j].minusEquals(new Matrix(data[j].getRowDimension(), data[j].getColumnDimension(), mean(data[j])));
+            double var = mean(data[j].arrayTimes(data[j]));
+            double stdev = Math.sqrt(var);
+            data[j].timesEquals(1 / stdev);
+        }
+        return data;
+    }
+
+    private static double mean(Matrix m) {
+        double mean = 0;
+        for(int i = 0; i < m.getRowDimension(); i++) {
+            for(int j = 0; j < m.getColumnDimension(); j++) {
+                mean += m.get(i,j);
+            }
+        }
+        return mean/(m.getRowDimension()*m.getColumnDimension());
+    }
 
     public static Matrix conv2d(Matrix input, Matrix kernel) {
         Matrix flippedKernel = new Matrix(kernel.getRowDimension(), kernel.getColumnDimension());
@@ -139,7 +158,6 @@ public abstract class DeviceUtils {
 
     private static Matrix softmax(Matrix z) {
         double max = z.norm1();
-        System.out.println(max);
         Matrix res = new Matrix(z.getRowDimension(), z.getColumnDimension());
         for(int j = 0; j < z.getColumnDimension(); j++) {
             res.set(0,j,Math.exp(z.get(0,j)-max));
