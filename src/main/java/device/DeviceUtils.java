@@ -18,54 +18,55 @@ public abstract class DeviceUtils {
     public static final int SOFTMAX = 4;
 
     /**
-     * normalizeData - normalizes data to have zero mean and unit variance
+     * activationFunction - performs an activation function on input matrix
      *
-     * @param data Input matrices representing each channel of the input
+     * @param type Type of activation function
+     * @param input Input matrix
+     * @param a A value of layer
      *
-     * @return normalized data
+     * @return Result of activation function on input
      */
-    public static Matrix[] normalizeData(Matrix[] data) {
-        for (Matrix channel : data) {
-            channel.minusEquals(new Matrix(channel.getRowDimension(), channel.getColumnDimension(), mean(channel)));
-            double var = mean(channel.arrayTimes(channel));
-            double stdev = Math.sqrt(var);
-            channel.timesEquals(1 / stdev);
+    public static Matrix activationFunction(int type, Matrix input, double a) {
+        switch(type) {
+            case SIGMOID:
+                return sigmoid(input);
+            case PRELU:
+                return prelu(input, a);
+            case RELU:
+                return relu(input);
+            case SOFTMAX:
+                return softmax(input);
+            case NONE:
+            default:
+                return input;
         }
-        return data;
     }
 
     /**
-     * mean - calculates the mean of a matrix
+     * computeRanking - ranks results in order of percent likelihood
      *
-     * @param input matrix to calculate the mean of
+     * @param result matrix of percent likelihood of results
      *
-     * @return mean of input
+     * @return int array containing ranking of classification of each result
      */
-    private static double mean(Matrix input) {
-        double mean = 0;
-        for(int i = 0; i < input.getRowDimension(); i++) {
-            for(int j = 0; j < input.getColumnDimension(); j++) {
-                mean += input.get(i, j);
+    public static int[] computeRanking(Matrix result) {
+        int[] results = new int[result.getColumnDimension()];
+        double[] values = new double[result.getColumnDimension()];
+        for(int element = 0; element < result.getColumnDimension(); element++) {
+            for(int rank = 0; rank < result.getColumnDimension(); rank++) {
+                if(result.get(0, element) > values[rank]) {
+                    //move everything below rank down one
+                    for(int l = result.getColumnDimension() - 1; l > rank; l--) {
+                        values[l] = values[l - 1];
+                        results[l] = results[l - 1];
+                    }
+                    values[rank] = result.get(0, element);
+                    results[rank] = element;
+                    break;
+                }
             }
         }
-        return mean / (input.getRowDimension() * input.getColumnDimension());
-    }
-
-    /**
-     * max - calculates the max of a matrix
-     *
-     * @param input matrix to calculate max of
-     *
-     * @return max of input
-     */
-    private static double max(Matrix input) {
-        double max = input.get(0, 0);
-        for(int i = 0; i < input.getRowDimension(); i++) {
-            for(int j = 0; j < input.getColumnDimension(); j++) {
-                if(max < input.get(i, j)) max = input.get(i, j);
-            }
-        }
-        return max;
+        return results;
     }
 
     /**
@@ -82,7 +83,7 @@ public abstract class DeviceUtils {
         for(int i = 0; i < kernel.getRowDimension(); i++) {
             for(int j = 0; j < kernel.getColumnDimension(); j++) {
                 flippedKernel.set(i, j, kernel.get(kernel.getRowDimension() - 1 - i,
-                                        kernel.getColumnDimension() - 1 - j));
+                        kernel.getColumnDimension() - 1 - j));
             }
         }
         //Constants
@@ -120,6 +121,44 @@ public abstract class DeviceUtils {
             }
         }
         return result;
+    }
+
+    /**
+     * flatten - flattens an array of matrices into a row vector
+     *
+     * @param input Matrix to flatten
+     *
+     * @return Flattened matrix
+     */
+    public static Matrix flatten(Matrix[] input) {
+        Matrix image = new Matrix(1, input.length * input[0].getRowDimension()
+                * input[0].getColumnDimension());
+        for(int channel = 0; channel < input.length; channel++) {
+            for(int row = 0; row < input[channel].getRowDimension(); row++) {
+                for(int column = 0; column < input[channel].getColumnDimension(); column++) {
+                    image.set(0, channel * input[channel].getRowDimension() * input[channel].getColumnDimension()
+                            +  row * input[channel].getColumnDimension() + column, input[channel].get(row,column));
+                }
+            }
+        }
+        return image;
+    }
+
+    /**
+     * normalizeData - normalizes data to have zero mean and unit variance
+     *
+     * @param data Input matrices representing each channel of the input
+     *
+     * @return normalized data
+     */
+    public static Matrix[] normalizeData(Matrix[] data) {
+        for (Matrix channel : data) {
+            channel.minusEquals(new Matrix(channel.getRowDimension(), channel.getColumnDimension(), mean(channel)));
+            double var = mean(channel.arrayTimes(channel));
+            double stdev = Math.sqrt(var);
+            channel.timesEquals(1 / stdev);
+        }
+        return data;
     }
 
     /**
@@ -164,117 +203,37 @@ public abstract class DeviceUtils {
     }
 
     /**
-     * computeRanking - ranks results in order of percent likelihood
+     * max - calculates the max of a matrix
      *
-     * @param result matrix of percent likelihood of results
+     * @param input matrix to calculate max of
      *
-     * @return int array containing ranking of classification of each result
+     * @return max of input
      */
-    public static int[] computeRanking(Matrix result) {
-        int[] results = new int[result.getColumnDimension()];
-        double[] values = new double[result.getColumnDimension()];
-        for(int element = 0; element < result.getColumnDimension(); element++) {
-            for(int rank = 0; rank < result.getColumnDimension(); rank++) {
-                if(result.get(0, element) > values[rank]) {
-                    //move everything below rank down one
-                    for(int l = result.getColumnDimension() - 1; l > rank; l--) {
-                        values[l] = values[l - 1];
-                        results[l] = results[l - 1];
-                    }
-                    values[rank] = result.get(0, element);
-                    results[rank] = element;
-                    break;
-                }
+    private static double max(Matrix input) {
+        double max = input.get(0, 0);
+        for(int i = 0; i < input.getRowDimension(); i++) {
+            for(int j = 0; j < input.getColumnDimension(); j++) {
+                if(max < input.get(i, j)) max = input.get(i, j);
             }
         }
-        return results;
+        return max;
     }
 
     /**
-     * flatten - flattens an array of matrices into a row vector
+     * mean - calculates the mean of a matrix
      *
-     * @param input Matrix to flatten
+     * @param input matrix to calculate the mean of
      *
-     * @return Flattened matrix
+     * @return mean of input
      */
-    public static Matrix flatten(Matrix[] input) {
-        Matrix image = new Matrix(1, input.length * input[0].getRowDimension()
-                                        * input[0].getColumnDimension());
-        for(int channel = 0; channel < input.length; channel++) {
-            for(int row = 0; row < input[channel].getRowDimension(); row++) {
-                for(int column = 0; column < input[channel].getColumnDimension(); column++) {
-                    image.set(0, channel * input[channel].getRowDimension() * input[channel].getColumnDimension()
-                                +  row * input[channel].getColumnDimension() + column, input[channel].get(row,column));
-                }
+    private static double mean(Matrix input) {
+        double mean = 0;
+        for(int i = 0; i < input.getRowDimension(); i++) {
+            for(int j = 0; j < input.getColumnDimension(); j++) {
+                mean += input.get(i, j);
             }
         }
-        return image;
-    }
-
-    /**
-     * activationFunction - performs an activation function on input matrix
-     *
-     * @param type Type of activation function
-     * @param input Input matrix
-     * @param a A value of layer
-     *
-     * @return Result of activation function on input
-     */
-    public static Matrix activationFunction(int type, Matrix input, double a) {
-        switch(type) {
-            case SIGMOID:
-                return sigmoid(input);
-            case PRELU:
-                return prelu(input, a);
-            case RELU:
-                return relu(input);
-            case SOFTMAX:
-                return softmax(input);
-            case NONE:
-            default:
-                return input;
-        }
-    }
-
-    /**
-     * softmax - the softmax activation function
-     *
-     * @param input The input to the softmax function
-     *
-     * @return The result of applying the softmax function to input
-     */
-    private static Matrix softmax(Matrix input) {
-        double max = max(input);
-        for(int row = 0; row < input.getRowDimension(); row++) {
-            for (int column = 0; column < input.getColumnDimension(); column++) {
-                input.set(row, column, Math.exp(input.get(row, column) - max));
-            }
-            double sum = 0;
-            for (int column = 0; column < input.getColumnDimension(); column++) {
-                sum += input.get(row, column);
-            }
-            for (int column = 0; column < input.getColumnDimension(); column++) {
-                input.set(row, column, input.get(row, column) / sum);
-            }
-        }
-
-        return input;
-    }
-
-    /**
-     * sigmoid - The sigmoid activation function
-     *
-     * @param input The input to the sigmoid function
-     *
-     * @return The result of applying the sigmoid function to input
-     */
-    private static Matrix sigmoid(Matrix input) {
-        for(int row = 0; row < input.getRowDimension(); row++) {
-            for(int column = 0; column < input.getColumnDimension(); column++) {
-                input.set(row, column, 1 / (1 + Math.exp(-input.get(row, column))));
-            }
-        }
-        return input;
+        return mean / (input.getRowDimension() * input.getColumnDimension());
     }
 
     /**
@@ -307,6 +266,47 @@ public abstract class DeviceUtils {
                 if(input.get(row, column) < 0) input.set(row, column, 0);
             }
         }
+        return input;
+    }
+
+    /**
+     * sigmoid - The sigmoid activation function
+     *
+     * @param input The input to the sigmoid function
+     *
+     * @return The result of applying the sigmoid function to input
+     */
+    private static Matrix sigmoid(Matrix input) {
+        for(int row = 0; row < input.getRowDimension(); row++) {
+            for(int column = 0; column < input.getColumnDimension(); column++) {
+                input.set(row, column, 1 / (1 + Math.exp(-input.get(row, column))));
+            }
+        }
+        return input;
+    }
+
+    /**
+     * softmax - the softmax activation function
+     *
+     * @param input The input to the softmax function
+     *
+     * @return The result of applying the softmax function to input
+     */
+    private static Matrix softmax(Matrix input) {
+        double max = max(input);
+        for(int row = 0; row < input.getRowDimension(); row++) {
+            for (int column = 0; column < input.getColumnDimension(); column++) {
+                input.set(row, column, Math.exp(input.get(row, column) - max));
+            }
+            double sum = 0;
+            for (int column = 0; column < input.getColumnDimension(); column++) {
+                sum += input.get(row, column);
+            }
+            for (int column = 0; column < input.getColumnDimension(); column++) {
+                input.set(row, column, input.get(row, column) / sum);
+            }
+        }
+
         return input;
     }
 }

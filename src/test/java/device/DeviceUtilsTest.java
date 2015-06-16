@@ -50,11 +50,11 @@ public class DeviceUtilsTest extends TestCase {
     }
 
     @Test
-    public void testComputeResults() throws Exception {
+    public void testComputeRanking() throws Exception {
         DoubleMatrix dRes = DoubleMatrix.rand(1,10);
         Matrix res = new Matrix(dRes.toArray2());
 
-        int[][] dOut = Utils.computeResults(dRes);
+        int[][] dOut = Utils.computeRanking(dRes);
         int[] out = DeviceUtils.computeRanking(res);
 
         for(int i = 0; i < dOut[0].length; i++) {

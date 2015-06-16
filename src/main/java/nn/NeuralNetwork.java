@@ -1,6 +1,5 @@
 package nn;
 
-import Jama.Matrix;
 import device.DeviceStructuredLayer;
 import device.DeviceFullyConnectedLayer;
 import device.DeviceNeuralNetwork;
@@ -10,12 +9,14 @@ import org.jblas.MatrixFunctions;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
 /**
- * Created by Tim on 3/29/2015.
+ * PoolingLayer - Encapsulates layers for a neural network
+ *
+ * @author Timothy Jassmann
+ * @version 06/16/2015
  */
 public class NeuralNetwork {
     private StructuredLayer[] cls;
@@ -24,8 +25,6 @@ public class NeuralNetwork {
     private Random r;
     private double cost;
     private double previousCost;
-    private static final boolean DEBUG = false;
-    private DoubleMatrix[] ZCAWhite;
 
     public NeuralNetwork(StructuredLayer[] cls, FullyConnectedLayer[] lds, String name) {
         this.cls = cls;
@@ -56,7 +55,6 @@ public class NeuralNetwork {
                 }
                 Utils.alterImages(in);
 
-                if(DEBUG) gradientCheck(in, labs);
                 DoubleMatrix[][][] convResults = new DoubleMatrix[cls.length+1][][];
                 convResults[0] = in;
                 for(int k = 0; k < cls.length; k++) {
@@ -69,7 +67,7 @@ public class NeuralNetwork {
                 }
                 DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labs);
                 for(int k = lds.length-1; k >= 0; k--) {
-                    Gradients cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta, labs);
+                    Gradients cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta);
                     delta = lds[k].updateWeights(cr, momentum, alpha);
 
                 }
@@ -86,11 +84,11 @@ public class NeuralNetwork {
             DoubleMatrix res = compute(input, batchSize, labels);
             if(cost > previousCost) alpha *= 0.75;
             previousCost = cost;
-            compareResults(Utils.computeResults(res), labels);
+            compareResults(Utils.computeRanking(res), labels);
             if(test != null) {
                 System.out.println("Test");
                 DoubleMatrix testRes = compute(test, testLab);
-                compareResults(Utils.computeResults(testRes), testLab);
+                compareResults(Utils.computeRanking(testRes), testLab);
             }
 
         }
@@ -108,7 +106,7 @@ public class NeuralNetwork {
             DoubleMatrix[][] testImages = loader.getTestData(i,k);
             DoubleMatrix testLabels = loader.getTestLabels(i,k);
             train(trainImages, trainLabels, testImages, testLabels, iterations, batchSize, momentum, alpha, i);
-            compareClasses(Utils.computeResults(compute(testImages, batchSize)), testLabels, loader.getLabelMap());
+            compareClasses(Utils.computeRanking(compute(testImages, batchSize)), testLabels, loader.getLabelMap());
             resetWeights();
         }
     }
@@ -184,7 +182,7 @@ public class NeuralNetwork {
         return -p.mul(labels).sum() / input.length;
     }
 
-    public double[][] gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels) {
+    public double[][] gradientCheck(DoubleMatrix[][] input, DoubleMatrix labels, double epsilon) {
         DoubleMatrix[][][] convResults = new DoubleMatrix[cls.length+1][][];
         convResults[0] = input;
         double[][] results = new double[lds.length+cls.length][];
@@ -199,15 +197,15 @@ public class NeuralNetwork {
         Gradients cr;
         DoubleMatrix delta = ldsResults[ldsResults.length-1].sub(labels);
         for(int k = lds.length-1; k >= 0; k--) {
-            cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta, labels);
-            delta = cr.delta;
-            results[cls.length+k] = lds[k].gradientCheck(input, labels, cr, this);
+            cr = lds[k].computeGradient(ldsResults[k], ldsResults[k + 1], delta);
+            delta = cr.getDelta();
+            results[cls.length+k] = lds[k].gradientCheck(input, labels, cr, this, epsilon);
         }
         DoubleMatrix[][] delt = Utils.expand(delta, convResults[cls.length][0].length, convResults[cls.length][0][0].rows, convResults[cls.length][0][0].columns);
         for(int k = cls.length-1; k >= 0; k--) {
             cr = cls[k].computeGradient(convResults[k], convResults[k + 1], delt);
-            results[k] = cls[k].gradientCheck(cr, input, labels, this);
-            delt = cr.delt;
+            results[k] = cls[k].gradientCheck(cr, input, labels, this, epsilon);
+            delt = cr.getDelt();
         }
         return results;
     }

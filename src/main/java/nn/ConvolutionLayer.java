@@ -54,61 +54,6 @@ public class ConvolutionLayer extends StructuredLayer {
     }
 
     /**
-     * initializeParameters - initializes weights, velocities, and a value.
-     */
-    public void initializeParameters() {
-        bias = new DoubleMatrix(numFeatures);
-        biasVelocity = new DoubleMatrix(numFeatures);
-        weights = new DoubleMatrix[numFeatures][channels];
-        weightVelocity = new DoubleMatrix[numFeatures][channels];
-        for(int feature = 0; feature < numFeatures; feature++) {
-            for(int channel = 0; channel < channels; channel++) {
-                weights[feature][channel] = initializeTheta(featureDim, channels);
-                weightVelocity[feature][channel] = new DoubleMatrix(featureDim, featureDim);
-            }
-        }
-        if(activationFunction == Utils.PRELU) a = .25;
-        else a = 0;
-    }
-
-    /**
-     * pretrain - pretrains the weights of the layer
-     *
-     * Parameters:
-     * @param input input to layer
-     * @param iterations number of iterations of pretraining
-     */
-    public void pretrain(DoubleMatrix[][] input, int iterations, double momentum, double alpha) {
-        DoubleMatrix patches = Utils.samplePatches(featureDim, featureDim, 10000, input);
-        StructuredLayer[] structured = {};
-        FullyConnectedLayer fc1 = new FullyConnectedLayer(patches.columns, weights.length, 5e-5, 0.5, Utils.PRELU);
-        FullyConnectedLayer fc2 = new FullyConnectedLayer(weights.length, patches.columns, 5e-5, 0.5, Utils.PRELU);
-        FullyConnectedLayer[] fcs = {fc1, fc2};
-        NeuralNetwork autoencoder = new NeuralNetwork(structured, fcs, "pretrain");
-        autoencoder.train(input, Utils.flatten(input), iterations, 100, momentum, alpha, 0);
-        this.weights = Utils.expand(fc1.getTheta().transpose(),channels, featureDim, featureDim);
-        this.bias = fc1.getBias();
-        this.a = fc1.getA();
-    }
-
-    /**
-     * initializeTheta - initializes the weights values of a feature of the layer
-     * 
-     * Parameters:
-     * @param featureDim The dimension of the features
-     * @param channels The number of input channels
-     *
-     * Return:
-     * @return initialized values for weights
-     */
-    private DoubleMatrix initializeTheta(int featureDim, int channels) {
-        double stdev = Math.sqrt(2.0 / ((a * a + 1) * featureDim * featureDim * channels));
-        DoubleMatrix res = DoubleMatrix.randn(featureDim, featureDim);
-        res.muli(stdev);
-        return res;
-    }
-
-    /**
      * compute - computes the output of the layer (using all layers)
      *
      * Parameters:
@@ -135,13 +80,13 @@ public class ConvolutionLayer extends StructuredLayer {
             public void run() {
                 for(int feature = 0; feature < weights.length; feature++) {
                     DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows - weights[0][0].rows + 1,
-                                                        input[imageNum][0].columns - weights[0][0].columns + 1);
+                            input[imageNum][0].columns - weights[0][0].columns + 1);
                     for(int channel = 0; channel < weights[feature].length; channel++) {
                         res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], true));
                     }
                     result[imageNum][feature] = Utils.activationFunction(activationFunction,
-                                                                         res.add(bias.get(feature)),
-                                                                         a).mul(1 - dropout);
+                            res.add(bias.get(feature)),
+                            a).mul(1 - dropout);
                 }
             }
         }
@@ -156,109 +101,7 @@ public class ConvolutionLayer extends StructuredLayer {
     }
 
     /**
-     * feedForward - compute the output of the layer (with dropout - used for training)
-     *
-     * Parameters:
-     * @param input input to the layer
-     *
-     * Return:
-     * @return output of layer
-     */
-    public DoubleMatrix[][] feedForward(DoubleMatrix[][] input) {
-        DoubleMatrix[][] result = new DoubleMatrix[input.length][weights.length];
-        z = new DoubleMatrix[input.length][weights.length];
-        class ConvolutionThread implements Runnable {
-            private int imageNum;
-            private DoubleMatrix[][] input;
-            private DoubleMatrix[][] result;
-
-            public ConvolutionThread(int imageNum, DoubleMatrix[][] input, DoubleMatrix[][] result) {
-                this.imageNum = imageNum;
-                this.input = input;
-                this.result = result;
-            }
-
-            @Override
-            public void run() {
-                for(int feature = 0; feature < weights.length; feature++) {
-                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows - weights[0][0].rows + 1,
-                                                        input[imageNum][0].columns - weights[0][0].columns + 1);
-                    for(int channel = 0; channel < weights[feature].length; channel++) {
-                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], true));
-                    }
-                    DoubleMatrix drop = DoubleMatrix.rand(res.rows, res.columns).ge(dropout);
-                    z[imageNum][feature] = res.add(bias.get(feature)).mul(drop);
-                    result[imageNum][feature] = Utils.activationFunction(activationFunction, z[imageNum][feature], a);
-                }
-            }
-        }
-        ExecutorService executor = Executors.newFixedThreadPool(Utils.NUMTHREADS);
-        for(int imageNum = 0; imageNum < input.length; imageNum++) {
-            Runnable worker = new ConvolutionThread(imageNum, input, result);
-            executor.execute(worker);
-        }
-        executor.shutdown();
-        while(!executor.isTerminated());
-        return result;
-    }
-
-    /**
-     * gradientCheck - performs gradient checking on the layer
-     *
-     * Parameters:
-     * @param gradients gradients of the layer
-     * @param in input to the entire network
-     * @param labels expected results of the network
-     * @param cnn neural network this layer belongs to
-     *
-     * Return:
-     * @return double array containing the norm between numerical and analytical gradients for weights, bias, and a
-     */
-    protected double[] gradientCheck(Gradients gradients, DoubleMatrix[][] in, DoubleMatrix labels,
-                                             NeuralNetwork cnn, double epsilon) {
-        double[] results = new double[2 + weights.length];
-        DoubleMatrix biasG = new DoubleMatrix(bias.length);
-        for(int i = 0; i < bias.length; i++) {
-            bias.put(i, bias.get(i) + epsilon);
-            double gradientsPlus = cnn.computeCost(in, labels);
-            bias.put(i, bias.get(i) - 2 * epsilon);
-            double gradientsMinus = cnn.computeCost(in, labels);
-            bias.put(i, bias.get(i) + epsilon);
-            biasG.put(i, (gradientsPlus - gradientsMinus) / (2 * epsilon));
-        }
-        DoubleMatrix biasA = biasG.add(gradients.biasGrad);
-        DoubleMatrix biasS = biasG.sub(gradients.biasGrad);
-        results[weights.length] = biasS.norm2() / biasA.norm2();
-
-        for(int i = 0; i < weights.length; i++) {
-            for(int j = 0; j < weights[i].length; j++) {
-                DoubleMatrix thetaG = new DoubleMatrix(gradients.tGrad[i][j].rows, gradients.tGrad[i][j].columns);
-                for(int k = 0; k < weights[i][j].length; k++) {
-                    weights[i][j].put(k, weights[i][j].get(k) + epsilon);
-                    double gradientsPlus = cnn.computeCost(in, labels);
-                    weights[i][j].put(k, weights[i][j].get(k) - 2 * epsilon);
-                    double gradientsMinus = cnn.computeCost(in, labels);
-                    weights[i][j].put(k, weights[i][j].get(k) + epsilon);
-                    thetaG.put(k, (gradientsPlus - gradientsMinus)/(2 * epsilon));
-                }
-                DoubleMatrix thetaA = thetaG.add(gradients.tGrad[i][j]);
-                DoubleMatrix thetaS = thetaG.sub(gradients.tGrad[i][j]);
-                results[i] = thetaS.norm2() / thetaA.norm2();
-            }
-        }
-
-        a += epsilon;
-        double gradientsP = cnn.computeCost(in, labels);
-        a -= 2 * epsilon;
-        double gradientsM = cnn.computeCost(in, labels);
-        a += epsilon;
-        double aG = (gradientsP - gradientsM)/(2 * epsilon);
-        results[weights.length + 1] = Math.abs((gradients.aGrad - aG) / (gradients.aGrad + aG));
-        return results;
-    }
-
-    /**
-     * cost - computes the gradients of the layer
+     * computeGradient - computes the gradients of the layer
      *
      * Parameters:
      * @param input input to the layer
@@ -300,12 +143,12 @@ public class ConvolutionLayer extends StructuredLayer {
             public void run() {
                 for(int feature = 0; feature < weights.length; feature++) {
                     delta[imageNum][feature].muli(Utils.activationGradient(activationFunction,
-                                                                           output[imageNum][feature], a));
+                            output[imageNum][feature], a));
                     for(int channel = 0; channel < weights[feature].length; channel++) {
                         delt[imageNum][channel].addi(Utils.convolve(delta[imageNum][feature],
-                                                     Utils.reverseMatrix(weights[feature][channel]), false));
+                                Utils.reverseMatrix(weights[feature][channel]), false));
                         weightGrad[feature][channel].addi(Utils.convolve(input[imageNum][channel],
-                                                          delta[imageNum][feature], true).div(input.length));
+                                delta[imageNum][feature], true).div(input.length));
                     }
                 }
             }
@@ -334,28 +177,50 @@ public class ConvolutionLayer extends StructuredLayer {
     }
 
     /**
-     * backpropagation - updates weights of layer based on backpropagated gradients
+     * feedForward - compute the output of the layer (with dropout - used for training)
      *
      * Parameters:
-     * @param gradients The gradients of the layer
-     * @param momentum The momentum to update the weights with
-     * @param alpha The learning rate
+     * @param input input to the layer
      *
      * Return:
-     * @return gradient propagated through the layer
+     * @return output of layer
      */
-    public DoubleMatrix[][] updateWeights(Gradients gradients, double momentum, double alpha) {
-        biasVelocity.muli(momentum).addi(gradients.biasGrad.mul(alpha));
-        bias.subi(biasVelocity);
-        for(int feature = 0; feature < weights.length; feature++) {
-            for(int channel = 0; channel < weights[feature].length; channel++) {
-                weightVelocity[feature][channel].muli(momentum).addi(gradients.tGrad[feature][channel].mul(alpha));
-                weights[feature][channel].subi(weightVelocity[feature][channel]);
+    public DoubleMatrix[][] feedForward(DoubleMatrix[][] input) {
+        DoubleMatrix[][] result = new DoubleMatrix[input.length][weights.length];
+        z = new DoubleMatrix[input.length][weights.length];
+        class ConvolutionThread implements Runnable {
+            private int imageNum;
+            private DoubleMatrix[][] input;
+            private DoubleMatrix[][] result;
+
+            public ConvolutionThread(int imageNum, DoubleMatrix[][] input, DoubleMatrix[][] result) {
+                this.imageNum = imageNum;
+                this.input = input;
+                this.result = result;
+            }
+
+            @Override
+            public void run() {
+                for(int feature = 0; feature < weights.length; feature++) {
+                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows - weights[0][0].rows + 1,
+                            input[imageNum][0].columns - weights[0][0].columns + 1);
+                    for(int channel = 0; channel < weights[feature].length; channel++) {
+                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], true));
+                    }
+                    DoubleMatrix drop = DoubleMatrix.rand(res.rows, res.columns).ge(dropout);
+                    z[imageNum][feature] = res.add(bias.get(feature)).mul(drop);
+                    result[imageNum][feature] = Utils.activationFunction(activationFunction, z[imageNum][feature], a);
+                }
             }
         }
-        aVelocity = aVelocity * momentum + gradients.aGrad * alpha;
-        a -= aVelocity;
-        return gradients.delt;
+        ExecutorService executor = Executors.newFixedThreadPool(Utils.NUMTHREADS);
+        for(int imageNum = 0; imageNum < input.length; imageNum++) {
+            Runnable worker = new ConvolutionThread(imageNum, input, result);
+            executor.execute(worker);
+        }
+        executor.shutdown();
+        while(!executor.isTerminated());
+        return result;
     }
 
     /**
@@ -372,5 +237,143 @@ public class ConvolutionLayer extends StructuredLayer {
             }
         }
         return new DeviceConvolutionLayer(weightMatrix, biasMatrix, activationFunction, a, dropout);
+    }
+
+    /**
+     * gradientCheck - performs gradient checking on the layer
+     *
+     * Parameters:
+     * @param gradients gradients of the layer
+     * @param in input to the entire network
+     * @param labels expected results of the network
+     * @param cnn neural network this layer belongs to
+     * @param epsilon epsilon value for gradient checking
+     *
+     * Return:
+     * @return double array containing the norm between numerical and analytical gradients for weights, bias, and a
+     */
+    public double[] gradientCheck(Gradients gradients, DoubleMatrix[][] in, DoubleMatrix labels,
+                                  NeuralNetwork cnn, double epsilon) {
+        double[] results = new double[2 + weights.length];
+        DoubleMatrix biasG = new DoubleMatrix(bias.length);
+        for(int i = 0; i < bias.length; i++) {
+            bias.put(i, bias.get(i) + epsilon);
+            double gradientsPlus = cnn.computeCost(in, labels);
+            bias.put(i, bias.get(i) - 2 * epsilon);
+            double gradientsMinus = cnn.computeCost(in, labels);
+            bias.put(i, bias.get(i) + epsilon);
+            biasG.put(i, (gradientsPlus - gradientsMinus) / (2 * epsilon));
+        }
+        DoubleMatrix biasA = biasG.add(gradients.getBiasGrad());
+        DoubleMatrix biasS = biasG.sub(gradients.getBiasGrad());
+        results[weights.length] = biasS.norm2() / biasA.norm2();
+
+        for(int i = 0; i < weights.length; i++) {
+            for(int j = 0; j < weights[i].length; j++) {
+                DoubleMatrix thetaG = new DoubleMatrix(gradients.getWGrad()[i][j].rows,
+                        gradients.getWGrad()[i][j].columns);
+                for(int k = 0; k < weights[i][j].length; k++) {
+                    weights[i][j].put(k, weights[i][j].get(k) + epsilon);
+                    double gradientsPlus = cnn.computeCost(in, labels);
+                    weights[i][j].put(k, weights[i][j].get(k) - 2 * epsilon);
+                    double gradientsMinus = cnn.computeCost(in, labels);
+                    weights[i][j].put(k, weights[i][j].get(k) + epsilon);
+                    thetaG.put(k, (gradientsPlus - gradientsMinus)/(2 * epsilon));
+                }
+                DoubleMatrix thetaA = thetaG.add(gradients.getWGrad()[i][j]);
+                DoubleMatrix thetaS = thetaG.sub(gradients.getWGrad()[i][j]);
+                results[i] = thetaS.norm2() / thetaA.norm2();
+            }
+        }
+        if(activationFunction == Utils.PRELU) {
+            a += epsilon;
+            double gradientsP = cnn.computeCost(in, labels);
+            a -= 2 * epsilon;
+            double gradientsM = cnn.computeCost(in, labels);
+            a += epsilon;
+            double aG = (gradientsP - gradientsM) / (2 * epsilon);
+            results[weights.length + 1] = Math.abs((gradients.getAGrad() - aG) / (gradients.getAGrad() + aG));
+        }
+        return results;
+    }
+
+    /**
+     * initializeParameters - initializes weights, velocities, and a value.
+     */
+    public void initializeParameters() {
+        bias = new DoubleMatrix(numFeatures);
+        biasVelocity = new DoubleMatrix(numFeatures);
+        weights = new DoubleMatrix[numFeatures][channels];
+        weightVelocity = new DoubleMatrix[numFeatures][channels];
+        for(int feature = 0; feature < numFeatures; feature++) {
+            for(int channel = 0; channel < channels; channel++) {
+                weights[feature][channel] = initializeTheta(featureDim, channels);
+                weightVelocity[feature][channel] = new DoubleMatrix(featureDim, featureDim);
+            }
+        }
+        if(activationFunction == Utils.PRELU) a = .25;
+        else a = 0;
+    }
+
+    /**
+     * pretrain - pretrains the weights of the layer
+     *
+     * Parameters:
+     * @param input input to layer
+     * @param iterations number of iterations of pretraining
+     */
+    public void pretrain(DoubleMatrix[][] input, int iterations, double momentum, double alpha) {
+        DoubleMatrix patches = Utils.samplePatches(featureDim, featureDim, 10000, input);
+        StructuredLayer[] structured = {};
+        FullyConnectedLayer fc1 = new FullyConnectedLayer(patches.columns, weights.length, 5e-5, 0.5, Utils.PRELU);
+        FullyConnectedLayer fc2 = new FullyConnectedLayer(weights.length, patches.columns, 5e-5, 0.5, Utils.PRELU);
+        FullyConnectedLayer[] fcs = {fc1, fc2};
+        NeuralNetwork autoencoder = new NeuralNetwork(structured, fcs, "pretrain");
+        autoencoder.train(input, Utils.flatten(input), iterations, 100, momentum, alpha, 0);
+        this.weights = Utils.expand(fc1.getWeights().transpose(),channels, featureDim, featureDim);
+        this.bias = fc1.getBias();
+        this.a = fc1.getA();
+    }
+
+    /**
+     * updateWeights - updates weights of layer based on backpropagated gradients
+     *
+     * Parameters:
+     * @param gradients The gradients of the layer
+     * @param momentum The momentum to update the weights with
+     * @param alpha The learning rate
+     *
+     * Return:
+     * @return gradient propagated through the layer
+     */
+    public DoubleMatrix[][] updateWeights(Gradients gradients, double momentum, double alpha) {
+        biasVelocity.muli(momentum).addi(gradients.getBiasGrad().mul(alpha));
+        bias.subi(biasVelocity);
+        for(int feature = 0; feature < weights.length; feature++) {
+            for(int channel = 0; channel < weights[feature].length; channel++) {
+                weightVelocity[feature][channel].muli(momentum).addi(gradients.getWGrad()[feature][channel].mul(alpha));
+                weights[feature][channel].subi(weightVelocity[feature][channel]);
+            }
+        }
+        aVelocity = aVelocity * momentum + gradients.getAGrad() * alpha;
+        a -= aVelocity;
+        return gradients.getDelt();
+    }
+
+    /**
+     * initializeTheta - initializes the weights values of a feature of the layer
+     * 
+     * Parameters:
+     * @param featureDim The dimension of the features
+     * @param channels The number of input channels
+     *
+     * Return:
+     * @return initialized values for weights
+     */
+    private DoubleMatrix initializeTheta(int featureDim, int channels) {
+        double stdev = Math.sqrt(2.0 / ((a * a + 1) * featureDim * featureDim * channels));
+        DoubleMatrix res = DoubleMatrix.randn(featureDim, featureDim);
+        res.muli(stdev);
+        return res;
     }
 }
