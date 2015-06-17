@@ -10,6 +10,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -179,6 +180,61 @@ public abstract class Utils {
         }
         executor.shutdown();
         while(!executor.isTerminated());
+    }
+
+    /**
+     * compareClasses - prints the accuracy of the network with respect to each classification
+     *
+     * @param result result of network
+     * @param labels labels of network
+     * @param labelMap hashmap that maps string labels to numerical labels
+     */
+    public static void compareClasses(int[][] result, DoubleMatrix labels, HashMap<String, Double> labelMap) {
+        HashMap<Double, String> newMap = reverseMap(labelMap);
+        double[] count = new double[labels.columns];
+        double[] totalCount = new double[labels.columns];
+        for(int i = 0; i < result.length; i++) {
+            int labelNo = -1;
+            for(int j = 0; j < labels.columns; j++) {
+                if((int)labels.get(i, j) == 1) {
+                    if(labelNo == -1) {
+                        labelNo = j;
+                    }
+                }
+            }
+            if(labelNo == result[i][0]) {
+                count[labelNo]++;
+            }
+            totalCount[labelNo]++;
+        }
+        for(int i = 0; i < count.length; i++) {
+            System.out.println(newMap.get((double) i) + ": " + count[i] + "/" + totalCount[i]
+                    + " = " + (count[i] / totalCount[i]));
+        }
+    }
+
+    /**
+     * compareResults - compares results of network to expected values. Prints the number
+     *                  of results that had the correct result ranked first, second, third, and so on.
+     *
+     * @param result Result of network
+     * @param labels Labels corresponding to results of network
+     *
+     * @return true if all results are the correct classification
+     */
+    public static boolean compareResults(int[][] result, DoubleMatrix labels) {
+        double[] sums = new double[result[0].length];
+        System.out.println(result.length+":"+labels.rows+":"+labels.columns);
+        for(int i = 0; i < result.length; i++) {
+            for(int j = 0; j < result[i].length; j++) {
+                sums[j] += labels.get(i, result[i][j]);
+            }
+        }
+        for(int i = 0; i < sums.length; i++) {
+            if(sums[i] > 0) System.out.println(i + ": " + sums[i] + "/" + result.length
+                    + " = " + (sums[i] / result.length));
+        }
+        return(sums[0] == result.length);
     }
 
     /**
@@ -528,6 +584,21 @@ public abstract class Utils {
      */
     private static DoubleMatrix reluGradient(DoubleMatrix input) {
         return input.gt(0);
+    }
+
+    /**
+     * reverseMap - reverses a hashmap such that keys become values and values become keys
+     *
+     * @param map hashmap to reverse
+     *
+     * @return reversed hashmap
+     */
+    private static HashMap<Double, String> reverseMap(HashMap<String, Double> map) {
+        HashMap<Double, String> newMap = new HashMap<Double, String>();
+        for(String key : map.keySet()) {
+            newMap.put(map.get(key), key);
+        }
+        return newMap;
     }
 
     /**
