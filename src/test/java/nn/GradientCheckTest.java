@@ -7,9 +7,6 @@ import org.junit.Test;
 import org.junit.Assert;
 
 
-/**
- * Created by jassmanntj on 6/16/2015.
- */
 public class GradientCheckTest {
     static int imageRows = 22;
     static int imageColumns = 22;
@@ -22,6 +19,8 @@ public class GradientCheckTest {
     static int hiddenSize = 10;
     static DoubleMatrix[][] data;
     static DoubleMatrix labels;
+    static double epsilon = 1e-8;
+    static double threshold = 1e-5;
 
     @BeforeClass
     public static void init() {
@@ -41,92 +40,92 @@ public class GradientCheckTest {
 
     @Test
     public void testA() {
-        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, 0, Utils.PRELU);
+        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.PRELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.PRELU);
-        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, 0, Utils.SOFTMAX);
+        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
         FullyConnectedLayer[] saes = {sa, sa2, sc};
         NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        double[][] result = cnn.gradientCheck(data, labels, 1e-5);
+        double[][] result = cnn.gradientCheck(data, labels, epsilon);
         for(int i = 0; i < result.length; i++) {
             for(int j = 0; j < result[i].length; j++) {
-                Assert.assertEquals("Layer " + i + " Weight " + j, result[i][j], 0, 1e-5);
+                Assert.assertEquals("Layer " + i + " Weight " + j, 0, result[i][j], threshold);
             }
         }
     }
 
     @Test
     public void testB() {
-        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, 0, Utils.PRELU);
-        PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
+        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.PRELU);
+        PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MAX);
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.PRELU);
-        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, 0, Utils.SOFTMAX);
+        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
         FullyConnectedLayer[] saes = {sa, sa2, sc};
         NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        double[][] result = cnn.gradientCheck(data, labels, 1e-5);
+        double[][] result = cnn.gradientCheck(data, labels, epsilon);
         for(int i = 0; i < result.length; i++) {
             for(int j = 0; j < result[i].length; j++) {
-                Assert.assertEquals("Layer " + i + " Weight " + j, result[i][j], 0, 1e-5);
+                Assert.assertEquals("Layer " + i + " Weight " + j, 0, result[i][j], threshold);
             }
         }
     }
 
     @Test
     public void testC() {
-        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, 0, Utils.RELU);
+        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.RELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.RELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.RELU);
-        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, 0, Utils.SOFTMAX);
+        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
         FullyConnectedLayer[] saes = {sa, sa2, sc};
         NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        double[][] result = cnn.gradientCheck(data, labels, 1e-5);
+        double[][] result = cnn.gradientCheck(data, labels, epsilon);
         for(int i = 0; i < result.length; i++) {
             for(int j = 0; j < result[i].length; j++) {
-                Assert.assertEquals("Layer " + i + " Weight " + j, result[i][j], 0, 1e-5);
+                Assert.assertEquals("Layer " + i + " Weight " + j, 0, result[i][j], threshold);
             }
         }
     }
 
     @Test
     public void testD() {
-        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, 0, Utils.SIGMOID);
+        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.SIGMOID);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
 
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.SIGMOID);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.SIGMOID);
-        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, 0, Utils.SOFTMAX);
+        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
         FullyConnectedLayer[] saes = {sa, sa2, sc};
         NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        double[][] result = cnn.gradientCheck(data, labels, 1e-5);
+        double[][] result = cnn.gradientCheck(data, labels, epsilon);
         for(int i = 0; i < result.length; i++) {
             for(int j = 0; j < result[i].length; j++) {
-                Assert.assertEquals("Layer " + i + " Weight " + j, result[i][j], 0, 1e-5);
+                Assert.assertEquals("Layer " + i + " Weight " + j, 0, result[i][j], threshold);
             }
         }
     }
 
     @Test
     public void testE() {
-        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, 0, Utils.NONE);
+        ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.NONE);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
 
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.NONE);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.NONE);
-        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, 0, Utils.SOFTMAX);
+        FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
         FullyConnectedLayer[] saes = {sa, sa2, sc};
         NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        double[][] result = cnn.gradientCheck(data, labels, 1e-5);
+        double[][] result = cnn.gradientCheck(data, labels, epsilon);
         for(int i = 0; i < result.length; i++) {
             for(int j = 0; j < result[i].length; j++) {
-                Assert.assertEquals("Layer " + i + " Weight " + j, result[i][j], 0, 1e-5);
+                Assert.assertEquals("Layer " + i + " Weight " + j, 0, result[i][j], threshold);
             }
         }
     }
