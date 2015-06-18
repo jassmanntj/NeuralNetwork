@@ -274,12 +274,10 @@ public abstract class Utils {
      *
      * @return result of convolving kernel over input
      */
-    public static DoubleMatrix convolve(DoubleMatrix input, DoubleMatrix kernel, boolean valid) {
+    public static DoubleMatrix convolve(DoubleMatrix input, DoubleMatrix kernel, int rowSize, int colSize) {
         //Constants
         int totalRows = input.rows + kernel.rows - 1;
         int totalCols = input.columns + kernel.columns - 1;
-        int rowSize = input.rows - kernel.rows + 1;
-        int colSize = input.columns - kernel.columns + 1;
         //reverse kernel
         kernel = reverseMatrix(kernel);
         //Transition input and kernel to larger matrices
@@ -299,14 +297,14 @@ public abstract class Utils {
         //Inverse of DFT on result
         t.complexInverse(kernelDFT.data, true);
         DoubleMatrix result = kernelDFT.getReal();
-        if(!valid) return result;
-        else {
+        //if(!valid) return result;
+        //else {
             //Resize result
             int startRows = (totalRows - rowSize) / 2;
             int startCols = (totalCols - colSize) / 2;
             result = result.getRange(startRows, startRows + rowSize, startCols, startCols + colSize);
             return result;
-        }
+        //}
     }
 
     /**

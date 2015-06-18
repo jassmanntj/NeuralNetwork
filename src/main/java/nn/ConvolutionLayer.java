@@ -79,10 +79,9 @@ public class ConvolutionLayer extends StructuredLayer {
             @Override
             public void run() {
                 for(int feature = 0; feature < weights.length; feature++) {
-                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows - weights[0][0].rows + 1,
-                            input[imageNum][0].columns - weights[0][0].columns + 1);
+                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows, input[imageNum][0].columns);
                     for(int channel = 0; channel < weights[feature].length; channel++) {
-                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], true));
+                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], res.rows, res.columns));
                     }
                     result[imageNum][feature] = Utils.activationFunction(activationFunction,
                             res.add(bias.get(feature)),
@@ -146,9 +145,9 @@ public class ConvolutionLayer extends StructuredLayer {
                             output[imageNum][feature], a));
                     for(int channel = 0; channel < weights[feature].length; channel++) {
                         delt[imageNum][channel].addi(Utils.convolve(delta[imageNum][feature],
-                                Utils.reverseMatrix(weights[feature][channel]), false));
+                                Utils.reverseMatrix(weights[feature][channel]), delt[imageNum][channel].rows, delt[imageNum][channel].columns));
                         weightGrad[feature][channel].addi(Utils.convolve(input[imageNum][channel],
-                                delta[imageNum][feature], true).div(input.length));
+                                delta[imageNum][feature], weightGrad[feature][channel].rows, weightGrad[feature][channel].columns).div(input.length));
                     }
                 }
             }
@@ -202,10 +201,9 @@ public class ConvolutionLayer extends StructuredLayer {
             @Override
             public void run() {
                 for(int feature = 0; feature < weights.length; feature++) {
-                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows - weights[0][0].rows + 1,
-                            input[imageNum][0].columns - weights[0][0].columns + 1);
+                    DoubleMatrix res = new DoubleMatrix(input[imageNum][0].rows, input[imageNum][0].columns);
                     for(int channel = 0; channel < weights[feature].length; channel++) {
-                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], true));
+                        res.addi(Utils.convolve(input[imageNum][channel], weights[feature][channel], res.rows, res.columns));
                     }
                     DoubleMatrix drop = DoubleMatrix.rand(res.rows, res.columns).ge(dropout);
                     z[imageNum][feature] = res.add(bias.get(feature)).mul(drop);

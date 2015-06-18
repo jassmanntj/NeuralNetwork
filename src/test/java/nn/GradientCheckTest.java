@@ -42,7 +42,7 @@ public class GradientCheckTest {
     public void testA() {
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.PRELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.PRELU);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 11*11, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
@@ -60,7 +60,7 @@ public class GradientCheckTest {
     public void testB() {
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.PRELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MAX);
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.PRELU);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 11*11, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
@@ -78,7 +78,7 @@ public class GradientCheckTest {
     public void testC() {
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.RELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.RELU);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 11*11, hiddenSize, lambda, dropout, Utils.RELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.RELU);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
@@ -97,7 +97,7 @@ public class GradientCheckTest {
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.SIGMOID);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
 
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.SIGMOID);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 11*11, hiddenSize, lambda, dropout, Utils.SIGMOID);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.SIGMOID);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};
@@ -116,7 +116,7 @@ public class GradientCheckTest {
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, dropout, Utils.NONE);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MEAN);
 
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 10*10, hiddenSize, lambda, dropout, Utils.NONE);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 11*11, hiddenSize, lambda, dropout, Utils.NONE);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.NONE);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, 2, lambda, dropout, Utils.SOFTMAX);
         StructuredLayer[] cls = {cl0, pl0};

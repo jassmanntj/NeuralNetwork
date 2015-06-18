@@ -29,7 +29,7 @@ public class LeafCNN {
         int hiddenSize = 200;
         int batchSize = 45;
         double momentum = 0.9;
-        int iterations = 150;
+        int iterations = 100;
         double dropout = 0.5;
         int outputSize = 15;
         double convolutionDropout = 0;
@@ -39,17 +39,16 @@ public class LeafCNN {
 
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, convolutionDropout, Utils.PRELU);
         ConvolutionLayer cl1 = new ConvolutionLayer(numFeatures, numFeatures, patchDim2, lambda, convolutionDropout, Utils.PRELU);
-        ConvolutionLayer cl2 = new ConvolutionLayer(numFeatures, numFeatures, patchDim2, lambda, convolutionDropout, Utils.PRELU);
         PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MAX);
         PoolingLayer pl1 = new PoolingLayer(poolDim, PoolingLayer.MAX);
-        StructuredLayer[] cls = {cl0, pl0, cl1, pl1, cl2};
+        StructuredLayer[] cls = {cl0, pl0, cl1, pl1};
 
-        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 13*18, hiddenSize, lambda, dropout, Utils.PRELU);
+        FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 14*19, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sa2 = new FullyConnectedLayer(hiddenSize, hiddenSize, lambda, dropout, Utils.PRELU);
         FullyConnectedLayer sc = new FullyConnectedLayer(hiddenSize, outputSize, lambda, 0, Utils.SOFTMAX);
         FullyConnectedLayer[] saes = {sa, sa2, sc};
 
-        NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnG");
-        cnn.crossValidation(loader, 10, iterations, batchSize, momentum, alpha);
+        NeuralNetwork cnn = new NeuralNetwork(cls, saes, "nnD");
+        cnn.crossValidation(loader, 5, iterations, batchSize, momentum, alpha);
     }
 }

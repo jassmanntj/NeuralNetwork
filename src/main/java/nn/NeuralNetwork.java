@@ -245,7 +245,6 @@ public class NeuralNetwork {
                 for(int k = fullyConnectedLayers.length - 1; k >= 0; k--) {
                     Gradients cr = fullyConnectedLayers[k].computeGradient(fcResults[k], fcResults[k + 1], delta);
                     delta = fullyConnectedLayers[k].updateWeights(cr, momentum, alpha);
-
                 }
                 Gradients cr;
                 DoubleMatrix[][] delt = Utils.expand(delta, convResults[structuredLayers.length][0].length,
@@ -271,6 +270,7 @@ public class NeuralNetwork {
 
         }
         writeDevice(name+set);
+        write(name+set);
     }
 
     /**
@@ -295,7 +295,7 @@ public class NeuralNetwork {
      */
     public void writeDevice(String filename) {
         try {
-            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("Device"+filename));
             DeviceStructuredLayer[] cp = new DeviceStructuredLayer[structuredLayers.length];
             DeviceFullyConnectedLayer[] fc = new DeviceFullyConnectedLayer[fullyConnectedLayers.length];
             for(int i = 0; i < structuredLayers.length; i++) {
@@ -306,6 +306,16 @@ public class NeuralNetwork {
             }
             DeviceNeuralNetwork nn = new DeviceNeuralNetwork(cp, fc);
             out.writeObject(nn);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void write(String filename) {
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+            out.writeObject(this);
             out.close();
         } catch (IOException e) {
             e.printStackTrace();
