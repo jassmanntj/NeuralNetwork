@@ -297,14 +297,12 @@ public abstract class Utils {
         //Inverse of DFT on result
         t.complexInverse(kernelDFT.data, true);
         DoubleMatrix result = kernelDFT.getReal();
-        //if(!valid) return result;
-        //else {
-            //Resize result
-            int startRows = (totalRows - rowSize) / 2;
-            int startCols = (totalCols - colSize) / 2;
-            result = result.getRange(startRows, startRows + rowSize, startCols, startCols + colSize);
-            return result;
-        //}
+
+        //Resize result
+        int startRows = (totalRows - rowSize) / 2;
+        int startCols = (totalCols - colSize) / 2;
+        result = result.getRange(startRows, startRows + rowSize, startCols, startCols + colSize);
+        return result;
     }
 
     /**

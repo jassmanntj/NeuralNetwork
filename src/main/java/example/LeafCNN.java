@@ -39,8 +39,8 @@ public class LeafCNN {
 
         ConvolutionLayer cl0 = new ConvolutionLayer(numFeatures, channels, patchDim, lambda, convolutionDropout, Utils.PRELU);
         ConvolutionLayer cl1 = new ConvolutionLayer(numFeatures, numFeatures, patchDim2, lambda, convolutionDropout, Utils.PRELU);
-        PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MAX);
-        PoolingLayer pl1 = new PoolingLayer(poolDim, PoolingLayer.MAX);
+        PoolingLayer pl0 = new PoolingLayer(poolDim, PoolingLayer.MAX, poolDim);
+        PoolingLayer pl1 = new PoolingLayer(poolDim, PoolingLayer.MAX, poolDim);
         StructuredLayer[] cls = {cl0, pl0, cl1, pl1};
 
         FullyConnectedLayer sa = new FullyConnectedLayer(numFeatures * 14*19, hiddenSize, lambda, dropout, Utils.PRELU);

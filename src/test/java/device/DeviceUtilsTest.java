@@ -10,19 +10,19 @@ public class DeviceUtilsTest extends TestCase {
 
     @Test
     public void testConvolve() throws Exception {
-        /*DoubleMatrix dm1 = DoubleMatrix.randn(4,4);
+        DoubleMatrix dm1 = DoubleMatrix.randn(4,4);
         DoubleMatrix dm2 = DoubleMatrix.randn(2,2);
         Matrix m1 = new Matrix(dm1.toArray2());
         Matrix m2 = new Matrix(dm2.toArray2());
 
-        DoubleMatrix dout = Utils.convolve(dm1, dm2, true);
-        Matrix mout = DeviceUtils.convolve(m1, m2);
+        DoubleMatrix dout = Utils.convolve(dm1, dm2, dm1.rows, dm1.columns);
+        Matrix mout = DeviceUtils.convolve(m1, m2, dm1.rows, dm1.columns);
 
         for(int i = 0; i < dout.rows; i++) {
             for(int j = 0; j < dout.columns; j++) {
                 assertEquals("convolve "+i+":"+j, dout.get(i,j), mout.get(i,j), 1e-5);
             }
-        }*/
+        }
     }
 
 

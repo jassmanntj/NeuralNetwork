@@ -77,7 +77,7 @@ public abstract class DeviceUtils {
      *
      * @return Result of convolution
      */
-    public static Matrix convolve(Matrix input, Matrix kernel) {
+    public static Matrix convolve(Matrix input, Matrix kernel, int rowSize, int colSize) {
         //Flip Kernel
         Matrix flippedKernel = new Matrix(kernel.getRowDimension(), kernel.getColumnDimension());
         for(int i = 0; i < kernel.getRowDimension(); i++) {
@@ -89,8 +89,6 @@ public abstract class DeviceUtils {
         //Constants
         int totalRows = input.getRowDimension() + flippedKernel.getRowDimension() - 1;
         int totalCols = input.getColumnDimension() + flippedKernel.getColumnDimension() - 1;
-        int rowSize = input.getRowDimension() - flippedKernel.getRowDimension() + 1;
-        int colSize = input.getColumnDimension() - flippedKernel.getColumnDimension() + 1;
         //Transition input and kernel to larger matrices
         double[][] in = new double[totalRows][totalCols * 2];
         double[][] kern = new double[totalRows][totalCols * 2];

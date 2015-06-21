@@ -47,7 +47,7 @@ public class DeviceConvolutionLayer extends DeviceStructuredLayer implements Ser
             Matrix res = new Matrix(input[0].getRowDimension() - weights[0][0].getRowDimension() + 1,
                                     input[0].getColumnDimension() - weights[0][0].getColumnDimension() + 1);
             for (int channel = 0; channel < weights[feature].length; channel++) {
-                res.plusEquals(DeviceUtils.convolve(input[channel], weights[feature][channel]));
+                res.plusEquals(DeviceUtils.convolve(input[channel], weights[feature][channel], input[channel].getRowDimension(), input[channel].getColumnDimension()));
             }
             Matrix featureBias = new Matrix(res.getRowDimension(), res.getColumnDimension(), bias.get(feature, 0));
             result[feature] = DeviceUtils.activationFunction(activation, res.plus(featureBias), a).times(1 - dropout);

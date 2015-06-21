@@ -13,6 +13,7 @@ import org.jblas.DoubleMatrix;
 public class PoolingLayer extends StructuredLayer {
     private int poolDim;
     private int type;
+    private int stride;
     public static final int MAX = 0;
     public static final int MEAN = 1;
 
@@ -22,9 +23,10 @@ public class PoolingLayer extends StructuredLayer {
      * @param poolDim dimension to pool by
      * @param type type of pooling
      */
-    public PoolingLayer(int poolDim, int type) {
+    public PoolingLayer(int poolDim, int type, int stride) {
         this.poolDim = poolDim;
         this.type = type;
+        this.stride = stride;
     }
 
     /**
@@ -91,7 +93,7 @@ public class PoolingLayer extends StructuredLayer {
      * @return device equivalent of layer
      */
     public DeviceStructuredLayer getDevice() {
-        return new DevicePoolingLayer(poolDim, type);
+        return new DevicePoolingLayer(poolDim, type, stride);
     }
 
     /**
@@ -132,15 +134,21 @@ public class PoolingLayer extends StructuredLayer {
      * @return expanded gradient
      */
     private DoubleMatrix maxExpand(DoubleMatrix gradient, DoubleMatrix input) {
-        DoubleMatrix expandedMatrix = new DoubleMatrix(gradient.rows * poolDim, gradient.columns * poolDim);
+        DoubleMatrix expandedMatrix = new DoubleMatrix(gradient.rows * stride, gradient.columns * stride);
+        int offset = (poolDim - stride) / 2;
         for (int i = 0; i < gradient.rows; i++) {
             for (int j = 0; j < gradient.columns; j++) {
-                DoubleMatrix patch = input.getRange(i * poolDim, i * poolDim + poolDim,
-                                                    j * poolDim, j * poolDim + poolDim);
+                int startrow = (i * stride - offset);
+                int startcol = (j * stride - offset);
+                int endrow = (startrow + poolDim) < input.rows ? (startrow + poolDim):(input.rows);
+                int endcol = (startcol + poolDim) < input.columns ? (startcol + poolDim):(input.columns);
+                startrow = startrow > 0 ? startrow:0;
+                startcol = startcol > 0 ? startcol:0;
+                DoubleMatrix patch = input.getRange(startrow, endrow, startcol, endcol);
                 int index = patch.argmax();
-                int row = i * poolDim + index % poolDim;
-                int col = j * poolDim + index / poolDim;
-                expandedMatrix.put(row, col, gradient.get(i, j));
+                int row = startrow + (index % patch.rows);
+                int col = startcol + (index / patch.rows);
+                expandedMatrix.put(row, col, expandedMatrix.get(row, col) + gradient.get(i, j));
             }
         }
         return expandedMatrix;
@@ -154,13 +162,18 @@ public class PoolingLayer extends StructuredLayer {
      * @return pooled matrix
      */
     private DoubleMatrix maxPool(DoubleMatrix input) {
-        int resultRows = input.rows / poolDim;
-        int resultCols = input.columns / poolDim;
+        int resultRows = input.rows / stride;
+        int resultCols = input.columns / stride;
+        int offset = (poolDim - stride) / 2;
         DoubleMatrix result = new DoubleMatrix(resultRows, resultCols);
         for(int poolRow = 0; poolRow < resultRows; poolRow++) {
             for(int poolCol = 0; poolCol < resultCols; poolCol++) {
-                DoubleMatrix patch = input.getRange(poolRow * poolDim, poolRow * poolDim + poolDim,
-                                                    poolCol * poolDim, poolCol * poolDim + poolDim);
+                int startrow = (poolRow * stride - offset);
+                int startcol = (poolCol * stride - offset);
+                int endrow = startrow + poolDim;
+                int endcol = startcol + poolDim;
+                DoubleMatrix patch = input.getRange(startrow > 0 ? startrow:0, endrow < input.rows ? endrow:(input.rows),
+                        startcol > 0 ? startcol:0, endcol < input.columns ? endcol:(input.columns));
                 result.put(poolRow, poolCol, patch.max());
             }
         }
@@ -175,14 +188,21 @@ public class PoolingLayer extends StructuredLayer {
      * @return expanded gradient
      */
     private DoubleMatrix meanExpand(DoubleMatrix gradient) {
-        DoubleMatrix expandedMatrix = new DoubleMatrix(gradient.rows * poolDim, gradient.columns * poolDim);
-        double scale = (poolDim * poolDim);
+        DoubleMatrix expandedMatrix = new DoubleMatrix(gradient.rows * stride, gradient.columns * stride);
+        int offset = (poolDim - stride) / 2;
         for (int i = 0; i < gradient.rows; i++) {
             for (int j = 0; j < gradient.columns; j++) {
+                int startrow = (i * stride - offset);
+                int startcol = (j * stride - offset);
+                int endrow = (startrow + poolDim) < expandedMatrix.rows ? (startrow + poolDim):(expandedMatrix.rows);
+                int endcol = (startcol + poolDim) < expandedMatrix.columns ? (startcol + poolDim):(expandedMatrix.columns);
+                startrow = startrow > 0 ? startrow:0;
+                startcol = startcol > 0 ? startcol:0;
+                double scale = (endrow - startrow) * (endcol - startcol);
                 double value = gradient.get(i, j) / scale;
-                for (int k = 0; k < poolDim; k++) {
-                    for (int l = 0; l < poolDim; l++) {
-                        expandedMatrix.put(i * poolDim + k, j * poolDim + l, value);
+                for (int k = startrow; k < endrow; k++) {
+                    for (int l = startcol; l < endcol; l++) {
+                        expandedMatrix.put(k, l, value + expandedMatrix.get(k, l));
                     }
                 }
             }
@@ -198,13 +218,19 @@ public class PoolingLayer extends StructuredLayer {
      * @return pooled matrix
      */
     private DoubleMatrix meanPool(DoubleMatrix input) {
-        int resultRows = input.rows / poolDim;
-        int resultCols = input.columns / poolDim;
+        int resultRows = input.rows / stride;
+        int resultCols = input.columns / stride;
+        int offset = (poolDim - stride) / 2;
         DoubleMatrix result = new DoubleMatrix(resultRows, resultCols);
         for(int poolRow = 0; poolRow < resultRows; poolRow++) {
             for(int poolCol = 0; poolCol < resultCols; poolCol++) {
-                DoubleMatrix patch = input.getRange(poolRow * poolDim, poolRow * poolDim + poolDim,
-                                                    poolCol * poolDim, poolCol * poolDim + poolDim);
+                int startrow = (poolRow * stride - offset);
+                int startcol = (poolCol * stride - offset);
+                int endrow = (startrow + poolDim) < input.rows ? (startrow + poolDim):(input.rows);
+                int endcol = (startcol + poolDim) < input.columns ? (startcol + poolDim):(input.columns);
+                startrow = startrow > 0 ? startrow:0;
+                startcol = startcol > 0 ? startcol:0;
+                DoubleMatrix patch = input.getRange(startrow, endrow, startcol, endcol);
                 result.put(poolRow, poolCol, patch.mean());
             }
         }

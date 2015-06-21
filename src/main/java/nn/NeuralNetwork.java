@@ -80,6 +80,7 @@ public class NeuralNetwork {
         DoubleMatrix res = null;
         cost = 0;
         for(int j = 0; j < input.length / batchSize; j++) {
+            System.out.print(j+" ");
             DoubleMatrix[][] in = new DoubleMatrix[batchSize][];
             DoubleMatrix labs = labels.getRange(j * batchSize, j * batchSize + batchSize, 0, labels.columns);
             System.arraycopy(input, j * batchSize, in, 0, batchSize);
@@ -96,7 +97,7 @@ public class NeuralNetwork {
             DoubleMatrix p = MatrixFunctions.log(out);
             cost += -p.mul(labs).sum() / (out.rows * (input.length / batchSize));
         }
-        System.out.println("Cost: " + cost);
+        System.out.println("\nCost: " + cost);
         return res;
     }
 
@@ -219,6 +220,8 @@ public class NeuralNetwork {
         for(int iteration = 0; iteration < iterations; iteration++) {
             System.out.println("Alpha: " + alpha);
             shuffleInts(indices, indices.length);
+
+
             for(int batch = 0; batch < data.length / batchSize; batch++) {
                 System.out.print(batch + " ");
                 DoubleMatrix[][] batchData = new DoubleMatrix[batchSize][data[0].length];
@@ -235,6 +238,7 @@ public class NeuralNetwork {
                 convResults[0] = batchData;
                 for(int k = 0; k < structuredLayers.length; k++) {
                     convResults[k + 1] = structuredLayers[k].feedForward(convResults[k]);
+
                 }
                 DoubleMatrix[] fcResults = new DoubleMatrix[fullyConnectedLayers.length + 1];
                 fcResults[0] = Utils.flatten(convResults[structuredLayers.length]);
@@ -256,7 +260,6 @@ public class NeuralNetwork {
                 }
             }
             System.out.println("\nSet: "+set+"\nIteration "+iteration);
-
             System.out.println("Train");
             DoubleMatrix res = compute(data, batchSize, labels);
             if(cost > previousCost) alpha *= 0.75;
@@ -268,7 +271,18 @@ public class NeuralNetwork {
                 Utils.compareResults(Utils.computeRanking(testRes), testLabels);
             }
 
+
         }
+        /*System.out.println("\nSet: "+set+"\nIteration "+iterations);
+
+        System.out.println("Train");
+        DoubleMatrix res = compute(data, batchSize, labels);
+        Utils.compareResults(Utils.computeRanking(res), labels);
+        if(testData != null) {
+            System.out.println("Test");
+            DoubleMatrix testRes = compute(testData, batchSize, testLabels);
+            Utils.compareResults(Utils.computeRanking(testRes), testLabels);
+        }*/
         writeDevice(name+set);
         write(name+set);
     }

@@ -12,7 +12,7 @@ public class DevicePoolingLayerTest extends TestCase {
         int poolDim = 2;
         int channels = 3;
 
-        PoolingLayer pl = new PoolingLayer(poolDim, PoolingLayer.MAX);
+        PoolingLayer pl = new PoolingLayer(poolDim, PoolingLayer.MAX, poolDim);
         DevicePoolingLayer dpl = (DevicePoolingLayer)pl.getDevice();
 
         DoubleMatrix[][] in = new DoubleMatrix[1][channels];
@@ -24,7 +24,6 @@ public class DevicePoolingLayerTest extends TestCase {
 
         DoubleMatrix[][] out = pl.compute(in);
         Matrix[] dout = dpl.compute(din);
-
         for(int i = 0; i < dout.length; i++) {
             for(int j = 0; j < dout[i].getRowDimension(); j++) {
                 for(int k = 0; k < dout[i].getColumnDimension(); k++) {

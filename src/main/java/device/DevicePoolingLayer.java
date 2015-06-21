@@ -13,6 +13,7 @@ import java.io.Serializable;
 public class DevicePoolingLayer extends DeviceStructuredLayer implements Serializable {
     private int poolDimension;
     private int type;
+    private int stride;
 
     /**
      * DevicePoolingLayer - Constructor for the DevicePoolingLayer
@@ -20,9 +21,10 @@ public class DevicePoolingLayer extends DeviceStructuredLayer implements Seriali
      * @param poolDimension The pooling dimension
      * @param type They type of pooling
      */
-    public DevicePoolingLayer(int poolDimension, int type) {
+    public DevicePoolingLayer(int poolDimension, int type, int stride) {
         this.poolDimension = poolDimension;
         this.type = type;
+        this.stride = stride;
     }
 
     /**
